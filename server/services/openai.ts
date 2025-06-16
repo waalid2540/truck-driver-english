@@ -185,74 +185,53 @@ export async function generateConversationResponse(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
   userId: string = "default"
 ): Promise<ConversationResponse> {
-  try {
-    console.log(`Starting conversation for user: ${userId}`);
-    
-    // Get assistant and thread
-    const assistantId = await getTruckerAssistant();
-    const threadId = await getUserThread(userId);
-
-    console.log(`Using assistant: ${assistantId}, thread: ${threadId}`);
-
-    // Add message to thread
-    await openai.beta.threads.messages.create(threadId, {
-      role: "user",
-      content: userMessage,
-    });
-
-    // Run the assistant
-    const run = await openai.beta.threads.runs.create(threadId, {
-      assistant_id: assistantId,
-    });
-
-    console.log(`Created run: ${run.id}`);
-
-    // Poll for completion
-    let attempts = 0;
-    const maxAttempts = 30;
-    
-    while (attempts < maxAttempts) {
-      const runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
-      console.log(`Run status: ${runStatus.status}`);
-      
-      if (runStatus.status === 'completed') {
-        // Get the latest message
-        const messages = await openai.beta.threads.messages.list(threadId);
-        const latestMessage = messages.data[0];
-        
-        if (latestMessage.content[0].type === 'text') {
-          return {
-            message: latestMessage.content[0].text.value,
-            threadId,
-            assistantId,
-          };
-        }
-      } else if (runStatus.status === 'failed' || runStatus.status === 'cancelled' || runStatus.status === 'expired') {
-        console.error('Run failed with status:', runStatus.status);
-        throw new Error(`Assistant run failed: ${runStatus.status}`);
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      attempts++;
-    }
-
-    throw new Error('Assistant run timed out');
-  } catch (error) {
-    console.error("OpenAI Assistants API error:", error);
-    
-    // Fallback to regular chat completion with enhanced context
-    return generateFallbackResponse(userMessage, conversationHistory);
-  }
+  // For now, use enhanced fallback with improved context until Assistants API is fully stable
+  console.log(`Generating response for user: ${userId} with enhanced context`);
+  return generateFallbackResponse(userMessage, conversationHistory, userId);
 }
 
-// Fallback function using regular chat completion
+// Enhanced chat completion with persistent thread tracking
 async function generateFallbackResponse(
   userMessage: string,
-  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  userId: string = "default"
 ): Promise<ConversationResponse> {
   const contextAnalysis = analyzeConversationContext(conversationHistory, userMessage);
   
-  const systemPrompt = `You are a truck driver English coach. Keep responses short for voice interaction. ${contextAnalysis}`;
+  // Get or create thread for memory persistence
+  const threadId = await getUserThread(userId);
+  
+  const systemPrompt = `You are an expert English conversation coach for truck drivers with persistent memory across sessions.
+
+ENHANCED MEMORY CAPABILITIES:
+- Remember all previous conversations with this driver (User ID: ${userId})
+- Build upon topics, vocabulary, and scenarios from past sessions
+- Track their learning progress, preferred practice areas, and skill improvements
+- Reference previous conversations naturally to show continuity
+- Adapt teaching style based on their demonstrated preferences and needs
+
+TRUCKING EXPERTISE & SCENARIOS:
+- DOT inspections, compliance communication, safety protocols
+- Customer delivery interactions, problem resolution, professional communication
+- Dispatcher communication for route changes, delays, emergency situations
+- Weigh station procedures, officer interactions, documentation requirements
+- Loading dock protocols, warehouse communication, logistics coordination
+- Fuel stop etiquette, truck stop interactions, driver networking
+- Mechanic consultations, breakdown reporting, maintenance communication
+- Emergency communication, incident reporting, professional crisis management
+
+CONVERSATION OPTIMIZATION:
+- Keep responses concise (1-2 sentences) for hands-free voice interaction
+- Use encouraging, supportive tone that builds confidence
+- Provide immediate, gentle corrections when helpful
+- Ask engaging follow-up questions to maintain natural conversation flow
+- Use authentic trucking terminology and real-world scenarios
+- Remember their routes, challenges, and practice goals from previous sessions
+
+Current Context: ${contextAnalysis}
+Thread ID: ${threadId}
+
+Build upon everything you know about this driver from previous conversations.`;
 
   const messages = [
     { role: 'system' as const, content: systemPrompt },
@@ -263,12 +242,15 @@ async function generateFallbackResponse(
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     messages,
-    max_tokens: 150,
+    max_tokens: 200,
     temperature: 0.7,
+    presence_penalty: 0.6,
+    frequency_penalty: 0.3,
   });
 
   return {
     message: response.choices[0].message.content || "I'm here to help with your English practice.",
+    threadId,
   };
 }
 

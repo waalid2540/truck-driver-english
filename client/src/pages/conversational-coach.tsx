@@ -158,10 +158,11 @@ export default function ConversationalCoach() {
             return updated;
           });
           
-          // Send to AI with full context
+          // Send to AI with full context including userId for thread management
           conversationMutation.mutate({
             message: transcript,
             history: updatedHistory,
+            userId: "trucker_1", // Use consistent user ID for thread persistence
           });
         }
       };
