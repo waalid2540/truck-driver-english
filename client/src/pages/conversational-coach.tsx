@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Bot, Send, Mic } from "lucide-react";
+import { ArrowLeft, Bot, Send, Mic, MicOff, Volume2 } from "lucide-react";
 import ChatMessage from "@/components/chat-message";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,9 @@ export default function ConversationalCoach() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [isListening, setIsListening] = useState(false);
+  const [isAutoReading, setIsAutoReading] = useState(true);
+  const [recognition, setRecognition] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -40,6 +43,11 @@ export default function ConversationalCoach() {
       
       setMessages(prev => [...prev, aiMessage]);
       setConversationHistory(prev => [...prev, { role: 'assistant', content: response.message }]);
+      
+      // Auto-read AI response if enabled
+      if (isAutoReading) {
+        speakText(response.message);
+      }
     },
     onError: (error) => {
       toast({
@@ -50,6 +58,101 @@ export default function ConversationalCoach() {
     },
   });
 
+  // Speech Recognition and Text-to-Speech functions
+  const initializeSpeechRecognition = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognition();
+      
+      recognitionInstance.continuous = false;
+      recognitionInstance.interimResults = false;
+      recognitionInstance.lang = 'en-US';
+      
+      recognitionInstance.onstart = () => {
+        setIsListening(true);
+      };
+      
+      recognitionInstance.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputValue(transcript);
+        setIsListening(false);
+      };
+      
+      recognitionInstance.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast({
+          title: "Voice Error",
+          description: "Could not understand speech. Please try again.",
+          variant: "destructive",
+        });
+      };
+      
+      recognitionInstance.onend = () => {
+        setIsListening(false);
+      };
+      
+      setRecognition(recognitionInstance);
+    }
+  };
+
+  const speakText = (text: string) => {
+    if ('speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 0.8;
+      
+      // Use a voice that sounds more natural
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(voice => 
+        voice.lang.startsWith('en') && voice.name.includes('Google')
+      ) || voices.find(voice => voice.lang.startsWith('en'));
+      
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const startListening = () => {
+    if (recognition) {
+      recognition.start();
+    } else {
+      toast({
+        title: "Voice Not Available",
+        description: "Voice input is not supported in this browser.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopListening = () => {
+    if (recognition && isListening) {
+      recognition.stop();
+    }
+  };
+
+  const toggleAutoReading = () => {
+    setIsAutoReading(!isAutoReading);
+    if (!isAutoReading) {
+      toast({
+        title: "Auto-Reading Enabled",
+        description: "AI responses will be read aloud automatically.",
+      });
+    } else {
+      toast({
+        title: "Auto-Reading Disabled",
+        description: "AI responses will no longer be read aloud.",
+      });
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -59,14 +162,22 @@ export default function ConversationalCoach() {
   }, [messages]);
 
   useEffect(() => {
+    // Initialize speech recognition
+    initializeSpeechRecognition();
+    
     // Initialize conversation with welcome message
     const welcomeMessage: Message = {
       id: "welcome",
-      content: "Hello! I'm your English coach. Let's practice some conversations you might have on the road. What scenario would you like to practice?",
+      content: "Hello! I'm your English coach. Let's practice some conversations you might have on the road. You can speak to me using the microphone button for hands-free practice. What scenario would you like to practice?",
       isUser: false,
       timestamp: new Date(),
     };
     setMessages([welcomeMessage]);
+    
+    // Read welcome message if auto-reading is enabled
+    if (isAutoReading) {
+      setTimeout(() => speakText(welcomeMessage.content), 1000);
+    }
   }, []);
 
   const handleSendMessage = async () => {
@@ -128,19 +239,29 @@ export default function ConversationalCoach() {
             <h3 className="font-medium text-gray-900 dark:text-gray-100">AI English Coach</h3>
             <p className="text-sm text-green-600 flex items-center">
               <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              Online
+              {isListening ? 'Listening...' : 'Online'}
             </p>
           </div>
         </div>
-        {scenario && (
+        <div className="flex items-center space-x-2">
           <Button
-            onClick={startScenarioPractice}
+            onClick={toggleAutoReading}
             size="sm"
-            className="bg-truck-orange hover:bg-orange-600 text-white"
+            variant={isAutoReading ? "default" : "outline"}
+            className={`${isAutoReading ? 'bg-green-600 hover:bg-green-700' : 'border-green-600 text-green-600 hover:bg-green-50'}`}
           >
-            Practice Scenario
+            <Volume2 className="h-4 w-4" />
           </Button>
-        )}
+          {scenario && (
+            <Button
+              onClick={startScenarioPractice}
+              size="sm"
+              className="bg-truck-orange hover:bg-orange-600 text-white"
+            >
+              Practice
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Chat Messages */}
@@ -173,33 +294,48 @@ export default function ConversationalCoach() {
       </div>
 
       {/* Chat Input */}
-      <div className="bg-white border-t border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center space-x-3">
           <div className="flex-1 relative">
             <Input
               type="text"
-              placeholder="Type your message..."
+              placeholder={isListening ? "Listening..." : "Type your message or use voice..."}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               className="pr-12 rounded-2xl border-gray-300 focus:border-truck-blue focus:ring-truck-blue"
-              disabled={conversationMutation.isPending}
+              disabled={conversationMutation.isPending || isListening}
             />
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-truck-blue p-1"
+              onClick={isListening ? stopListening : startListening}
+              className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 ${
+                isListening 
+                  ? 'text-red-500 hover:text-red-600 animate-pulse' 
+                  : 'text-gray-400 hover:text-truck-blue'
+              }`}
+              disabled={conversationMutation.isPending}
             >
-              <Mic className="h-4 w-4" />
+              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             </Button>
           </div>
           <Button
             onClick={handleSendMessage}
-            disabled={!inputValue.trim() || conversationMutation.isPending}
+            disabled={!inputValue.trim() || conversationMutation.isPending || isListening}
             className="bg-truck-blue hover:bg-blue-700 text-white p-3 rounded-2xl"
           >
             <Send className="h-4 w-4" />
           </Button>
+        </div>
+        
+        {/* Voice Instructions */}
+        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+          {isListening ? (
+            "🎤 Speak now - I'm listening..."
+          ) : (
+            "Tap the microphone for hands-free practice"
+          )}
         </div>
       </div>
     </div>
