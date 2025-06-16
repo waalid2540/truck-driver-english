@@ -53,6 +53,15 @@ export default function ConversationalCoach() {
           // Auto-restart listening after AI finishes speaking in continuous mode
           if (isContinuousMode && isRecordingSupported) {
             setTimeout(() => {
+              console.log('Auto-restarting speech recognition after TTS');
+              startListening();
+            }, 500);
+          }
+        }).catch(() => {
+          // If TTS fails, still restart listening
+          if (isContinuousMode && isRecordingSupported) {
+            setTimeout(() => {
+              console.log('Auto-restarting speech recognition after TTS error');
               startListening();
             }, 1000);
           }
@@ -60,8 +69,9 @@ export default function ConversationalCoach() {
       } else if (isContinuousMode && isRecordingSupported) {
         // If not using TTS, restart listening immediately
         setTimeout(() => {
+          console.log('Auto-restarting speech recognition (no TTS)');
           startListening();
-        }, 1000);
+        }, 500);
       }
     },
     onError: (error) => {
@@ -138,16 +148,6 @@ export default function ConversationalCoach() {
       recognition.onend = () => {
         setIsListening(false);
         console.log('Speech recognition ended');
-        
-        // Auto-restart listening in continuous mode after AI responds
-        if (isContinuousMode && !conversationMutation.isPending) {
-          setTimeout(() => {
-            if (mediaRecorderRef.current && !isListening) {
-              console.log('Auto-restarting speech recognition');
-              mediaRecorderRef.current.start();
-            }
-          }, 2000); // Wait 2 seconds after AI finishes speaking
-        }
       };
 
       mediaRecorderRef.current = recognition;
