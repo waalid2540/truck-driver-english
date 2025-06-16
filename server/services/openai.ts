@@ -11,25 +11,135 @@ export interface ConversationResponse {
   suggestions?: string[];
 }
 
+function analyzeConversationContext(
+  history: Array<{ role: 'user' | 'assistant'; content: string }>,
+  currentMessage: string
+): string {
+  if (history.length === 0) {
+    return "New conversation starting. Driver appears to be beginning English practice.";
+  }
+
+  // Extract key information from conversation
+  const userMessages = history.filter(msg => msg.role === 'user').map(msg => msg.content);
+  const allUserText = [...userMessages, currentMessage].join(' ').toLowerCase();
+  
+  // Analyze topics and context
+  const topics = [];
+  const skills = [];
+  const scenarios = [];
+  
+  // Detect trucking topics
+  if (allUserText.includes('dot') || allUserText.includes('inspection')) {
+    topics.push('DOT inspections');
+  }
+  if (allUserText.includes('california') || allUserText.includes('route')) {
+    topics.push('route planning and destinations');
+  }
+  if (allUserText.includes('customer') || allUserText.includes('delivery')) {
+    topics.push('customer interactions');
+  }
+  if (allUserText.includes('dispatch')) {
+    topics.push('dispatcher communication');
+  }
+  
+  // Detect skill level and needs
+  if (allUserText.includes('basic') || allUserText.includes('beginner')) {
+    skills.push('basic level English learner');
+  }
+  if (allUserText.includes('practice') || allUserText.includes('help')) {
+    skills.push('actively seeking practice');
+  }
+  if (allUserText.includes('repeat') || allUserText.includes('again')) {
+    skills.push('needs repetition and clarification');
+  }
+  
+  // Detect preferred scenarios
+  if (allUserText.includes('roleplay') || allUserText.includes('act as')) {
+    scenarios.push('prefers roleplay scenarios');
+  }
+  
+  // Build context summary
+  let context = `Conversation history: ${history.length} exchanges. `;
+  if (topics.length > 0) {
+    context += `Topics discussed: ${topics.join(', ')}. `;
+  }
+  if (skills.length > 0) {
+    context += `Driver characteristics: ${skills.join(', ')}. `;
+  }
+  if (scenarios.length > 0) {
+    context += `Learning preferences: ${scenarios.join(', ')}. `;
+  }
+  
+  context += `Current message suggests: ${analyzeCurrentIntent(currentMessage)}`;
+  
+  return context;
+}
+
+function analyzeCurrentIntent(message: string): string {
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('help') || lowerMessage.includes('can you')) {
+    return "seeking assistance or guidance";
+  }
+  if (lowerMessage.includes('practice') || lowerMessage.includes("let's")) {
+    return "wants to practice conversation";
+  }
+  if (lowerMessage.includes('repeat') || lowerMessage.includes('again')) {
+    return "needs clarification or repetition";
+  }
+  if (lowerMessage.includes('question') || lowerMessage.includes('about')) {
+    return "asking for information or explanation";
+  }
+  if (lowerMessage.includes('thank') || lowerMessage.includes('good')) {
+    return "providing positive feedback";
+  }
+  if (lowerMessage.includes('don\'t know') || lowerMessage.includes('confused')) {
+    return "expressing uncertainty, needs support";
+  }
+  
+  return "continuing normal conversation";
+}
+
 export async function generateConversationResponse(
   userMessage: string,
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
 ): Promise<ConversationResponse> {
   try {
-    const systemPrompt = `You are an English conversation coach specifically designed to help truck drivers improve their English communication skills through voice conversations. Your role is to:
+    // Analyze conversation context and user's current needs
+    const contextAnalysis = analyzeConversationContext(conversationHistory, userMessage);
+    
+    const systemPrompt = `You are an intelligent English conversation coach for truck drivers with advanced memory and contextual awareness. Your enhanced capabilities include:
 
-1. Help truck drivers practice real-world conversations they encounter on the job
-2. Provide gentle corrections and suggestions for better English usage
-3. Create roleplay scenarios relevant to trucking (talking to customers, dispatchers, law enforcement, mechanics, DOT inspectors, weigh station officers, etc.)
-4. Be encouraging, patient, and supportive while helping them improve
-5. Use simple, clear language appropriate for English learners
-6. Focus on practical, job-relevant vocabulary and phrases
-7. Keep responses SHORT and conversational since this is voice-based interaction
-8. Ask follow-up questions to keep the conversation flowing
-9. Provide immediate feedback on pronunciation, grammar, or word choice when helpful
-10. Simulate real trucking scenarios like delivery confirmations, route changes, breakdown reports, etc.
+MEMORY & CONTEXT:
+- Remember everything discussed in this conversation thread
+- Track the driver's skill level, common mistakes, and improvement areas
+- Adapt teaching style based on their progress and preferences
+- Reference previous topics and build upon them naturally
+- Maintain conversation continuity and relationship building
 
-Keep responses under 2-3 sentences to work well with voice interaction. Be conversational, helpful, and focused on trucking-related scenarios. Provide gentle corrections when needed and suggest better ways to express ideas. Remember that drivers may be using this hands-free while driving or during breaks.`;
+INTELLIGENT RESPONSES:
+- Provide personalized feedback based on conversation history
+- Suggest practice scenarios relevant to their mentioned routes, experiences, or challenges
+- Remember their preferred learning style (roleplay, corrections, scenarios)
+- Build on previously practiced vocabulary and situations
+- Ask intelligent follow-up questions that advance their learning
+
+TRUCK DRIVER FOCUS:
+- Master all trucking scenarios: DOT inspections, customer deliveries, dispatch communication, weigh stations, breakdowns, route planning, fuel stops, loading/unloading
+- Use authentic trucking terminology and situations
+- Provide industry-specific language practice
+- Help with professional communication skills for career advancement
+
+CONVERSATION STYLE:
+- Keep responses 1-2 sentences for voice interaction
+- Be encouraging and build confidence
+- Give immediate, helpful corrections when needed
+- Create natural conversation flow
+- Ask engaging questions that continue the dialogue
+
+Current context: ${contextAnalysis}
+
+Remember everything they've told you and build upon it in this response.`;
 
     const messages = [
       { role: 'system' as const, content: systemPrompt },
@@ -40,8 +150,10 @@ Keep responses under 2-3 sentences to work well with voice interaction. Be conve
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages,
-      max_tokens: 150,
-      temperature: 0.8,
+      max_tokens: 200,
+      temperature: 0.7,
+      presence_penalty: 0.6,
+      frequency_penalty: 0.3,
     });
 
     const aiMessage = response.choices[0].message.content || "I'm sorry, I didn't understand that. Could you try again?";

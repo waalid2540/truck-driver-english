@@ -19,6 +19,12 @@ export default function ConversationalCoach() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [sessionMemory, setSessionMemory] = useState({
+    topics: [] as string[],
+    skillLevel: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
+    preferredScenarios: [] as string[],
+    commonMistakes: [] as string[],
+  });
   const [isListening, setIsListening] = useState(false);
   const [isAutoReading, setIsAutoReading] = useState(true);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
@@ -122,12 +128,40 @@ export default function ConversationalCoach() {
           };
 
           setMessages(prev => [...prev, userMessage]);
-          setConversationHistory(prev => [...prev, { role: 'user', content: transcript }]);
           
-          // Send to AI immediately
+          // Update conversation history with better context
+          const updatedHistory = [...conversationHistory, { role: 'user' as const, content: transcript }];
+          setConversationHistory(updatedHistory);
+          
+          // Update session memory with transcript analysis
+          setSessionMemory(prev => {
+            const lowerMessage = transcript.toLowerCase();
+            const updated = { ...prev };
+            
+            // Track topics mentioned
+            if (lowerMessage.includes('dot') || lowerMessage.includes('inspection')) {
+              if (!updated.topics.includes('DOT inspections')) {
+                updated.topics.push('DOT inspections');
+              }
+            }
+            if (lowerMessage.includes('customer') || lowerMessage.includes('delivery')) {
+              if (!updated.topics.includes('customer service')) {
+                updated.topics.push('customer service');
+              }
+            }
+            if (lowerMessage.includes('dispatch') || lowerMessage.includes('route')) {
+              if (!updated.topics.includes('dispatch communication')) {
+                updated.topics.push('dispatch communication');
+              }
+            }
+            
+            return updated;
+          });
+          
+          // Send to AI with full context
           conversationMutation.mutate({
             message: transcript,
-            history: conversationHistory,
+            history: updatedHistory,
           });
         }
       };
@@ -206,6 +240,52 @@ export default function ConversationalCoach() {
     } catch (error) {
       console.error('Error stopping speech recognition:', error);
     }
+  };
+
+  const updateSessionMemory = (userMessage: string) => {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    setSessionMemory(prev => {
+      const updated = { ...prev };
+      
+      // Track topics mentioned
+      if (lowerMessage.includes('dot') || lowerMessage.includes('inspection')) {
+        if (!updated.topics.includes('DOT inspections')) {
+          updated.topics.push('DOT inspections');
+        }
+      }
+      if (lowerMessage.includes('customer') || lowerMessage.includes('delivery')) {
+        if (!updated.topics.includes('customer service')) {
+          updated.topics.push('customer service');
+        }
+      }
+      if (lowerMessage.includes('dispatch') || lowerMessage.includes('route')) {
+        if (!updated.topics.includes('dispatch communication')) {
+          updated.topics.push('dispatch communication');
+        }
+      }
+      
+      // Track scenario preferences
+      if (lowerMessage.includes('roleplay') || lowerMessage.includes('act as')) {
+        if (!updated.preferredScenarios.includes('roleplay')) {
+          updated.preferredScenarios.push('roleplay');
+        }
+      }
+      if (lowerMessage.includes('practice') || lowerMessage.includes('basic')) {
+        if (!updated.preferredScenarios.includes('guided practice')) {
+          updated.preferredScenarios.push('guided practice');
+        }
+      }
+      
+      // Detect skill level adjustments
+      if (lowerMessage.includes('don\'t know') || lowerMessage.includes('confused') || lowerMessage.includes('help')) {
+        if (updated.skillLevel === 'intermediate') updated.skillLevel = 'beginner';
+      } else if (lowerMessage.includes('easy') || lowerMessage.includes('understand')) {
+        if (updated.skillLevel === 'beginner') updated.skillLevel = 'intermediate';
+      }
+      
+      return updated;
+    });
   };
 
   const handleAudioFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -354,6 +434,11 @@ export default function ConversationalCoach() {
             <p className="text-sm text-green-600 flex items-center">
               <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
               {isListening ? 'Listening...' : 'Online'}
+              {sessionMemory.topics.length > 0 && (
+                <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  Remembers {sessionMemory.topics.length} topics
+                </span>
+              )}
             </p>
           </div>
         </div>
