@@ -62,25 +62,63 @@ export default function ConversationalCoach() {
   // Audio Recording and Whisper AI functions
   const initializeAudioRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Media devices not supported');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
       });
+      
+      // Check if MediaRecorder supports webm format
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+        }
+      }
+      
+      const recorder = new MediaRecorder(stream, { mimeType });
+      
+      let chunks: Blob[] = [];
       
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          setAudioChunks(prev => [...prev, event.data]);
+          chunks.push(event.data);
         }
       };
       
       recorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        setAudioChunks([]);
+        setIsListening(false);
+        
+        if (chunks.length === 0) {
+          toast({
+            title: "Recording Error",
+            description: "No audio data recorded. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const audioBlob = new Blob(chunks, { type: mimeType });
+        chunks = []; // Clear chunks
         
         try {
           const transcription = await api.transcribeAudio(audioBlob);
-          setInputValue(transcription.text);
-          setIsListening(false);
+          if (transcription.text && transcription.text.trim()) {
+            setInputValue(transcription.text);
+          } else {
+            toast({
+              title: "No Speech Detected",
+              description: "Please speak clearly and try again.",
+              variant: "destructive",
+            });
+          }
         } catch (error) {
           console.error('Transcription error:', error);
           toast({
@@ -88,7 +126,6 @@ export default function ConversationalCoach() {
             description: "Could not transcribe speech. Please try again.",
             variant: "destructive",
           });
-          setIsListening(false);
         }
       };
       
@@ -96,52 +133,58 @@ export default function ConversationalCoach() {
     } catch (error) {
       console.error('Microphone access error:', error);
       toast({
-        title: "Microphone Access",
-        description: "Please allow microphone access for voice input.",
+        title: "Microphone Access Required",
+        description: "Please allow microphone access in your browser settings for voice input.",
         variant: "destructive",
       });
     }
   };
 
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
+  const playAIGeneratedSpeech = async (text: string) => {
+    try {
+      const audioBlob = await api.generateSpeech(text);
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
       
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+      };
       
-      // Use a voice that sounds more natural
-      const voices = window.speechSynthesis.getVoices();
-      const preferredVoice = voices.find(voice => 
-        voice.lang.startsWith('en') && voice.name.includes('Google')
-      ) || voices.find(voice => voice.lang.startsWith('en'));
-      
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
+      await audio.play();
+    } catch (error) {
+      console.error('TTS error:', error);
+      // Fallback to browser TTS if OpenAI TTS fails
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 0.8;
+        window.speechSynthesis.speak(utterance);
       }
-      
-      window.speechSynthesis.speak(utterance);
     }
   };
 
-  const startListening = () => {
-    if (recognition) {
-      recognition.start();
-    } else {
-      toast({
-        title: "Voice Not Available",
-        description: "Voice input is not supported in this browser.",
-        variant: "destructive",
-      });
+  const startListening = async () => {
+    if (mediaRecorder && mediaRecorder.state === 'inactive') {
+      setAudioChunks([]);
+      setIsListening(true);
+      mediaRecorder.start();
+    } else if (!mediaRecorder) {
+      await initializeAudioRecording();
+      // Try again after initialization
+      if (mediaRecorder && mediaRecorder.state === 'inactive') {
+        setAudioChunks([]);
+        setIsListening(true);
+        mediaRecorder.start();
+      }
     }
   };
 
   const stopListening = () => {
-    if (recognition && isListening) {
-      recognition.stop();
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      setIsListening(false);
     }
   };
 
@@ -169,8 +212,8 @@ export default function ConversationalCoach() {
   }, [messages]);
 
   useEffect(() => {
-    // Initialize speech recognition
-    initializeSpeechRecognition();
+    // Initialize audio recording
+    initializeAudioRecording();
     
     // Initialize conversation with welcome message
     const welcomeMessage: Message = {
@@ -183,7 +226,7 @@ export default function ConversationalCoach() {
     
     // Read welcome message if auto-reading is enabled
     if (isAutoReading) {
-      setTimeout(() => speakText(welcomeMessage.content), 1000);
+      setTimeout(() => playAIGeneratedSpeech(welcomeMessage.content), 1000);
     }
   }, []);
 
@@ -339,9 +382,9 @@ export default function ConversationalCoach() {
         {/* Voice Instructions */}
         <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
           {isListening ? (
-            "🎤 Speak now - I'm listening..."
+            "🎤 Speak now - I'm listening with Whisper AI..."
           ) : (
-            "Tap the microphone for hands-free practice"
+            "Tap the microphone for hands-free practice with AI speech recognition"
           )}
         </div>
       </div>
