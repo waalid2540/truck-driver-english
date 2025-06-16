@@ -29,7 +29,7 @@ export default function Home() {
             </div>
           </div>
           <Link href="/settings">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-blue-700">
+            <Button variant="ghost" size="sm" className="text-white hover:bg-blue-700 dark:hover:bg-blue-600">
               <Settings className="h-5 w-5" />
             </Button>
           </Link>
@@ -55,7 +55,7 @@ export default function Home() {
 
         {/* Practice Options */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-800">Choose Your Practice</h3>
+          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">Choose Your Practice</h3>
           
           {/* DOT Practice Card */}
           <Card className="hover:shadow-md transition-shadow">

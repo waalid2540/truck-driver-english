@@ -9,10 +9,11 @@ import ConversationalCoach from "@/pages/conversational-coach";
 import Settings from "@/pages/settings";
 import BottomNavigation from "@/components/bottom-navigation";
 import NotFound from "@/pages/not-found";
+import { useEffect } from "react";
 
 function Router() {
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen shadow-lg relative">
+    <div className="max-w-md mx-auto bg-white dark:bg-gray-900 min-h-screen shadow-lg relative">
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/dot-practice" component={DotPractice} />
@@ -26,10 +27,15 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    // Enable dark mode by default
+    document.documentElement.classList.add('dark');
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="bg-surface min-h-screen">
+        <div className="bg-surface dark:bg-gray-950 min-h-screen">
           <Toaster />
           <Router />
         </div>
