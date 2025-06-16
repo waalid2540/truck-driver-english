@@ -21,6 +21,7 @@ export default function ConversationalCoach() {
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [isListening, setIsListening] = useState(false);
   const [isAutoReading, setIsAutoReading] = useState(true);
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [isRecordingSupported, setIsRecordingSupported] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -48,7 +49,19 @@ export default function ConversationalCoach() {
       
       // Auto-read AI response if enabled using OpenAI TTS
       if (isAutoReading) {
-        playAIGeneratedSpeech(response.message);
+        playAIGeneratedSpeech(response.message).then(() => {
+          // Auto-restart listening after AI finishes speaking in continuous mode
+          if (isContinuousMode && isRecordingSupported) {
+            setTimeout(() => {
+              startListening();
+            }, 1000);
+          }
+        });
+      } else if (isContinuousMode && isRecordingSupported) {
+        // If not using TTS, restart listening immediately
+        setTimeout(() => {
+          startListening();
+        }, 1000);
       }
     },
     onError: (error) => {
@@ -112,6 +125,16 @@ export default function ConversationalCoach() {
       recognition.onend = () => {
         setIsListening(false);
         console.log('Speech recognition ended');
+        
+        // Auto-restart listening in continuous mode after AI responds
+        if (isContinuousMode && !conversationMutation.isPending) {
+          setTimeout(() => {
+            if (mediaRecorderRef.current && !isListening) {
+              console.log('Auto-restarting speech recognition');
+              mediaRecorderRef.current.start();
+            }
+          }, 2000); // Wait 2 seconds after AI finishes speaking
+        }
       };
 
       mediaRecorderRef.current = recognition;
@@ -322,6 +345,30 @@ export default function ConversationalCoach() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          <Button
+            onClick={() => {
+              setIsContinuousMode(!isContinuousMode);
+              if (!isContinuousMode && isRecordingSupported) {
+                startListening();
+                toast({
+                  title: "Continuous Mode ON",
+                  description: "I'll automatically listen after each response.",
+                });
+              } else {
+                stopListening();
+                toast({
+                  title: "Continuous Mode OFF", 
+                  description: "Tap microphone to speak.",
+                });
+              }
+            }}
+            size="sm"
+            variant={isContinuousMode ? "default" : "outline"}
+            className={`${isContinuousMode ? 'bg-blue-600 hover:bg-blue-700' : 'border-blue-600 text-blue-600 hover:bg-blue-50'}`}
+            title="Toggle continuous conversation"
+          >
+            <Mic className="h-4 w-4" />
+          </Button>
           <Button
             onClick={toggleAutoReading}
             size="sm"
