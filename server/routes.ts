@@ -138,8 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Conversation AI routes
   app.post("/api/conversation/respond", async (req, res) => {
     try {
-      const { message, history } = req.body;
-      const response = await generateConversationResponse(message, history || []);
+      const { message, history, userId } = req.body;
+      const response = await generateConversationResponse(message, history || [], userId || "default");
       res.json(response);
     } catch (error) {
       res.status(500).json({ message: "Failed to generate response: " + (error as Error).message });

@@ -9,7 +9,13 @@ export interface ConversationResponse {
   message: string;
   scenario?: string;
   suggestions?: string[];
+  threadId?: string;
+  assistantId?: string;
 }
+
+// Store for managing assistant threads
+const threadStore = new Map<string, string>(); // userId -> threadId
+let truckerAssistantId: string | null = null;
 
 function analyzeConversationContext(
   history: Array<{ role: 'user' | 'assistant'; content: string }>,
@@ -100,71 +106,170 @@ function analyzeCurrentIntent(message: string): string {
   return "continuing normal conversation";
 }
 
-export async function generateConversationResponse(
-  userMessage: string,
-  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
-): Promise<ConversationResponse> {
+// Initialize or get the truck driver assistant
+async function getTruckerAssistant(): Promise<string> {
+  if (truckerAssistantId) {
+    return truckerAssistantId;
+  }
+
   try {
-    // Analyze conversation context and user's current needs
-    const contextAnalysis = analyzeConversationContext(conversationHistory, userMessage);
-    
-    const systemPrompt = `You are an intelligent English conversation coach for truck drivers with advanced memory and contextual awareness. Your enhanced capabilities include:
+    const assistant = await openai.beta.assistants.create({
+      name: "Truck Driver English Coach",
+      instructions: `You are an expert English conversation coach specialized in helping truck drivers improve their communication skills through voice conversations.
 
-MEMORY & CONTEXT:
-- Remember everything discussed in this conversation thread
-- Track the driver's skill level, common mistakes, and improvement areas
-- Adapt teaching style based on their progress and preferences
-- Reference previous topics and build upon them naturally
-- Maintain conversation continuity and relationship building
+CORE CAPABILITIES:
+- Provide hands-free voice conversation practice optimized for trucking scenarios
+- Remember all previous conversations and build upon them naturally
+- Track learning progress, common mistakes, and preferred topics
+- Adapt teaching style based on driver's skill level and needs
+- Create realistic roleplay scenarios for professional trucking situations
 
-INTELLIGENT RESPONSES:
-- Provide personalized feedback based on conversation history
-- Suggest practice scenarios relevant to their mentioned routes, experiences, or challenges
-- Remember their preferred learning style (roleplay, corrections, scenarios)
-- Build on previously practiced vocabulary and situations
-- Ask intelligent follow-up questions that advance their learning
-
-TRUCK DRIVER FOCUS:
-- Master all trucking scenarios: DOT inspections, customer deliveries, dispatch communication, weigh stations, breakdowns, route planning, fuel stops, loading/unloading
-- Use authentic trucking terminology and situations
-- Provide industry-specific language practice
-- Help with professional communication skills for career advancement
+TRUCKING EXPERTISE:
+- DOT inspections and compliance communication
+- Customer delivery interactions and problem resolution
+- Dispatcher communication for route changes, delays, breakdowns
+- Weigh station procedures and officer interactions
+- Loading dock protocols and warehouse communication
+- Fuel stop etiquette and truck stop conversations
+- Mechanic consultations and breakdown reporting
+- Emergency communication and incident reporting
 
 CONVERSATION STYLE:
-- Keep responses 1-2 sentences for voice interaction
-- Be encouraging and build confidence
-- Give immediate, helpful corrections when needed
-- Create natural conversation flow
-- Ask engaging questions that continue the dialogue
+- Keep responses concise (1-2 sentences) for voice interaction
+- Use encouraging, supportive tone that builds confidence
+- Provide immediate, gentle corrections when helpful
+- Ask engaging follow-up questions to maintain conversation flow
+- Reference previous conversations to show continuity
+- Use authentic trucking terminology and real-world scenarios
 
-Current context: ${contextAnalysis}
-
-Remember everything they've told you and build upon it in this response.`;
-
-    const messages = [
-      { role: 'system' as const, content: systemPrompt },
-      ...conversationHistory,
-      { role: 'user' as const, content: userMessage }
-    ];
-
-    const response = await openai.chat.completions.create({
+MEMORY & PERSONALIZATION:
+- Remember driver's routes, experience level, and challenges
+- Track topics discussed and skills practiced
+- Build on previous conversations naturally
+- Provide personalized feedback based on conversation history
+- Suggest relevant practice scenarios based on their needs`,
       model: "gpt-4o",
-      messages,
-      max_tokens: 200,
-      temperature: 0.7,
-      presence_penalty: 0.6,
-      frequency_penalty: 0.3,
+      tools: [],
     });
 
-    const aiMessage = response.choices[0].message.content || "I'm sorry, I didn't understand that. Could you try again?";
-
-    return {
-      message: aiMessage,
-    };
+    truckerAssistantId = assistant.id;
+    console.log(`Created Trucker Assistant: ${truckerAssistantId}`);
+    return truckerAssistantId;
   } catch (error) {
-    console.error("OpenAI API error:", error);
-    throw new Error("Failed to generate conversation response: " + (error as Error).message);
+    console.error("Failed to create assistant:", error);
+    throw error;
   }
+}
+
+// Get or create thread for user
+async function getUserThread(userId: string = "default"): Promise<string> {
+  let threadId = threadStore.get(userId);
+  
+  if (!threadId) {
+    try {
+      const thread = await openai.beta.threads.create();
+      threadId = thread.id;
+      threadStore.set(userId, threadId);
+      console.log(`Created new thread for user ${userId}: ${threadId}`);
+    } catch (error) {
+      console.error("Failed to create thread:", error);
+      throw error;
+    }
+  }
+  
+  return threadId;
+}
+
+export async function generateConversationResponse(
+  userMessage: string,
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  userId: string = "default"
+): Promise<ConversationResponse> {
+  try {
+    console.log(`Starting conversation for user: ${userId}`);
+    
+    // Get assistant and thread
+    const assistantId = await getTruckerAssistant();
+    const threadId = await getUserThread(userId);
+
+    console.log(`Using assistant: ${assistantId}, thread: ${threadId}`);
+
+    // Add message to thread
+    await openai.beta.threads.messages.create(threadId, {
+      role: "user",
+      content: userMessage,
+    });
+
+    // Run the assistant
+    const run = await openai.beta.threads.runs.create(threadId, {
+      assistant_id: assistantId,
+    });
+
+    console.log(`Created run: ${run.id}`);
+
+    // Poll for completion
+    let attempts = 0;
+    const maxAttempts = 30;
+    
+    while (attempts < maxAttempts) {
+      const runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
+      console.log(`Run status: ${runStatus.status}`);
+      
+      if (runStatus.status === 'completed') {
+        // Get the latest message
+        const messages = await openai.beta.threads.messages.list(threadId);
+        const latestMessage = messages.data[0];
+        
+        if (latestMessage.content[0].type === 'text') {
+          return {
+            message: latestMessage.content[0].text.value,
+            threadId,
+            assistantId,
+          };
+        }
+      } else if (runStatus.status === 'failed' || runStatus.status === 'cancelled' || runStatus.status === 'expired') {
+        console.error('Run failed with status:', runStatus.status);
+        throw new Error(`Assistant run failed: ${runStatus.status}`);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      attempts++;
+    }
+
+    throw new Error('Assistant run timed out');
+  } catch (error) {
+    console.error("OpenAI Assistants API error:", error);
+    
+    // Fallback to regular chat completion with enhanced context
+    return generateFallbackResponse(userMessage, conversationHistory);
+  }
+}
+
+// Fallback function using regular chat completion
+async function generateFallbackResponse(
+  userMessage: string,
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+): Promise<ConversationResponse> {
+  const contextAnalysis = analyzeConversationContext(conversationHistory, userMessage);
+  
+  const systemPrompt = `You are a truck driver English coach. Keep responses short for voice interaction. ${contextAnalysis}`;
+
+  const messages = [
+    { role: 'system' as const, content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user' as const, content: userMessage }
+  ];
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages,
+    max_tokens: 150,
+    temperature: 0.7,
+  });
+
+  return {
+    message: response.choices[0].message.content || "I'm here to help with your English practice.",
+  };
 }
 
 export async function generatePracticeScenario(): Promise<string> {
