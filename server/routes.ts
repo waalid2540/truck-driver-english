@@ -158,10 +158,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Whisper AI transcription endpoint
   app.post("/api/transcribe", upload.single('audio'), async (req, res) => {
     try {
+      console.log('Transcription request received:', {
+        hasFile: !!req.file,
+        bodyKeys: Object.keys(req.body),
+        files: req.files ? Object.keys(req.files) : 'none'
+      });
+      
       if (!req.file) {
+        console.log('No file found in request');
         return res.status(400).json({ message: "No audio file provided" });
       }
 
+      console.log('Processing audio file:', req.file.originalname, req.file.size, 'bytes');
       const transcription = await transcribeAudio(req.file.buffer, req.file.originalname || 'audio.webm');
       res.json(transcription);
     } catch (error) {

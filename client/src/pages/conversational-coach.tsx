@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Bot, Send, Mic, MicOff, Volume2 } from "lucide-react";
+import { ArrowLeft, Bot, Send, Mic, MicOff, Volume2, Upload } from "lucide-react";
 import ChatMessage from "@/components/chat-message";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -216,6 +216,48 @@ export default function ConversationalCoach() {
     }
   };
 
+  const handleAudioFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('audio/')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload an audio file (mp3, wav, m4a, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log('Uploading audio file for Whisper AI:', file.name, file.size, 'bytes');
+      const transcription = await api.transcribeAudio(file);
+      if (transcription.text && transcription.text.trim()) {
+        setInputValue(transcription.text);
+        toast({
+          title: "Audio Transcribed",
+          description: `"${transcription.text.substring(0, 50)}${transcription.text.length > 50 ? '...' : ''}"`,
+        });
+      } else {
+        toast({
+          title: "No Speech Detected",
+          description: "Could not detect speech in the audio file.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Audio file transcription error:', error);
+      toast({
+        title: "Transcription Error",
+        description: "Could not transcribe the audio file. Please try again.",
+        variant: "destructive",
+      });
+    }
+
+    // Clear the input
+    event.target.value = '';
+  };
+
   const toggleAutoReading = () => {
     setIsAutoReading(!isAutoReading);
     if (!isAutoReading) {
@@ -384,19 +426,43 @@ export default function ConversationalCoach() {
               className="pr-12 rounded-2xl border-gray-300 focus:border-truck-blue focus:ring-truck-blue"
               disabled={conversationMutation.isPending || isListening}
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={isListening ? stopListening : startListening}
-              className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 ${
-                isListening 
-                  ? 'text-red-500 hover:text-red-600 animate-pulse' 
-                  : 'text-gray-400 hover:text-truck-blue'
-              }`}
-              disabled={conversationMutation.isPending}
-            >
-              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </Button>
+            {isRecordingSupported ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={isListening ? stopListening : startListening}
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 ${
+                  isListening 
+                    ? 'text-red-500 hover:text-red-600 animate-pulse' 
+                    : 'text-gray-400 hover:text-truck-blue'
+                }`}
+                disabled={conversationMutation.isPending}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            ) : (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleAudioFileUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-8 h-8"
+                  id="audio-upload"
+                  disabled={conversationMutation.isPending}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-truck-blue p-1"
+                  disabled={conversationMutation.isPending}
+                  asChild
+                >
+                  <label htmlFor="audio-upload" className="cursor-pointer">
+                    <Upload className="h-4 w-4" />
+                  </label>
+                </Button>
+              </div>
+            )}
           </div>
           <Button
             onClick={handleSendMessage}
@@ -411,8 +477,10 @@ export default function ConversationalCoach() {
         <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
           {isListening ? (
             "🎤 Speak now - I'm listening with Whisper AI..."
-          ) : (
+          ) : isRecordingSupported ? (
             "Tap the microphone for hands-free practice with AI speech recognition"
+          ) : (
+            "Upload an audio file for Whisper AI transcription or type your message"
           )}
         </div>
       </div>
