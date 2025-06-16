@@ -258,6 +258,8 @@ export default function ConversationalCoach() {
     event.target.value = '';
   };
 
+
+
   const toggleAutoReading = () => {
     setIsAutoReading(!isAutoReading);
     if (!isAutoReading) {
@@ -483,6 +485,56 @@ export default function ConversationalCoach() {
             "Upload an audio file for Whisper AI transcription or type your message"
           )}
         </div>
+        
+        {/* Demo Button for Testing Whisper AI */}
+        {!isRecordingSupported && (
+          <div className="mt-2 flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                // Generate a sample audio file using TTS and then transcribe it back
+                const testText = "Hello, I'm a truck driver practicing my English communication skills for professional situations.";
+                
+                toast({
+                  title: "Testing Whisper AI",
+                  description: "Generating speech then transcribing it back...",
+                });
+
+                // Generate speech then transcribe
+                api.generateSpeech(testText)
+                  .then(audioBlob => api.transcribeAudio(audioBlob))
+                  .then(transcription => {
+                    if (transcription.text && transcription.text.trim()) {
+                      setInputValue(transcription.text);
+                      toast({
+                        title: "Whisper AI Test Success",
+                        description: `Original: "${testText.substring(0, 30)}..."\nTranscribed: "${transcription.text.substring(0, 30)}..."`,
+                      });
+                    } else {
+                      toast({
+                        title: "Whisper AI Test",
+                        description: "No text was transcribed from the audio.",
+                        variant: "destructive",
+                      });
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Whisper demo error:', error);
+                    toast({
+                      title: "Demo Error",
+                      description: "Could not complete the Whisper AI demonstration.",  
+                      variant: "destructive",
+                    });
+                  });
+              }}
+              disabled={conversationMutation.isPending}
+              className="text-xs"
+            >
+              Test Whisper AI Demo
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
