@@ -1,0 +1,90 @@
+# English Coach for Professional Drivers
+
+## Overview
+
+This is a full-stack web application designed to help truck drivers improve their English communication skills through interactive practice sessions. The app provides two main learning features: DOT (Department of Transportation) practice tests and conversational coaching with AI assistance.
+
+## System Architecture
+
+### Full-Stack Structure
+- **Frontend**: React 18 with TypeScript, using Vite for build tooling
+- **Backend**: Express.js server with TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Styling**: Tailwind CSS with shadcn/ui component library
+- **State Management**: TanStack Query (React Query) for server state
+- **Routing**: Wouter for client-side routing
+
+### Mobile-First Design
+The application is designed as a mobile-first progressive web app with a maximum width container and bottom navigation, optimized for truck drivers who primarily use mobile devices.
+
+## Key Components
+
+### Frontend Architecture
+- **Component Library**: shadcn/ui components with Radix UI primitives
+- **Responsive Design**: Mobile-optimized with trucking-themed colors (blue, orange, gray)
+- **Navigation**: Bottom tab navigation with Home, DOT Practice, Coach, and Settings
+- **Forms**: React Hook Form with Zod validation
+
+### Backend Architecture
+- **API Routes**: RESTful endpoints for users, practice sessions, DOT categories/questions, and chat
+- **Storage Layer**: Abstracted storage interface with in-memory implementation (ready for database integration)
+- **AI Integration**: OpenAI GPT-4o for conversational coaching
+- **Session Management**: PostgreSQL session store with connect-pg-simple
+
+### Database Schema
+- **Users**: Profile management with practice preferences and progress tracking
+- **DOT Categories**: Organized practice topics (safety, regulations, etc.)
+- **DOT Questions**: Multiple choice questions with explanations
+- **Practice Sessions**: User practice history and scoring
+- **Chat Messages**: Conversation history for AI coaching sessions
+
+## Data Flow
+
+1. **User Authentication**: Sessions stored in PostgreSQL
+2. **Practice Sessions**: User selects category → fetches questions → tracks progress → saves results
+3. **AI Coaching**: User sends message → OpenAI API → contextual response → conversation history stored
+4. **Progress Tracking**: All practice activities update user statistics and streaks
+
+## External Dependencies
+
+### Core Dependencies
+- **@neondatabase/serverless**: PostgreSQL database connection
+- **drizzle-orm**: Type-safe database ORM
+- **@tanstack/react-query**: Server state management
+- **wouter**: Lightweight React router
+- **openai**: AI conversation integration
+
+### UI/UX Dependencies
+- **@radix-ui/***: Accessible component primitives
+- **tailwindcss**: Utility-first CSS framework
+- **lucide-react**: Icon library
+- **react-hook-form**: Form state management
+
+### Development Tools
+- **vite**: Fast build tool and dev server
+- **tsx**: TypeScript execution for development
+- **esbuild**: Fast JavaScript bundler for production
+
+## Deployment Strategy
+
+### Replit Configuration
+- **Modules**: Node.js 20, Web, PostgreSQL 16
+- **Development**: `npm run dev` with hot reload on port 5000
+- **Production Build**: Vite build + esbuild for server bundling
+- **Deployment**: Autoscale deployment target
+
+### Environment Variables
+- `DATABASE_URL`: PostgreSQL connection string
+- `OPENAI_API_KEY`: Required for AI coaching features
+
+### Build Process
+1. Frontend assets built with Vite to `dist/public`
+2. Server bundled with esbuild to `dist/index.js`
+3. Static files served from Express in production
+
+## Changelog
+- June 16, 2025. Initial setup
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.

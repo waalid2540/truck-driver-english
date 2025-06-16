@@ -1,0 +1,144 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { generateConversationResponse, generatePracticeScenario } from "./services/openai";
+import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // User routes
+  app.get("/api/user/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get user" });
+    }
+  });
+
+  app.patch("/api/user/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedUser = await storage.updateUser(id, req.body);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // DOT Categories routes
+  app.get("/api/dot-categories", async (req, res) => {
+    try {
+      const categories = await storage.getDotCategories();
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get DOT categories" });
+    }
+  });
+
+  // DOT Questions routes
+  app.get("/api/dot-questions/:categoryId", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      const questions = await storage.getDotQuestionsByCategory(categoryId);
+      res.json(questions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get DOT questions" });
+    }
+  });
+
+  // Practice Sessions routes
+  app.get("/api/practice-sessions/user/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const sessions = await storage.getPracticeSessionsByUser(userId);
+      res.json(sessions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get practice sessions" });
+    }
+  });
+
+  app.get("/api/practice-sessions/user/:userId/recent", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const limit = parseInt(req.query.limit as string) || 5;
+      const sessions = await storage.getRecentSessionsByUser(userId, limit);
+      res.json(sessions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get recent sessions" });
+    }
+  });
+
+  app.post("/api/practice-sessions", async (req, res) => {
+    try {
+      const validatedData = insertPracticeSessionSchema.parse(req.body);
+      const session = await storage.createPracticeSession(validatedData);
+      res.json(session);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid session data" });
+    }
+  });
+
+  app.patch("/api/practice-sessions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedSession = await storage.updatePracticeSession(id, req.body);
+      if (!updatedSession) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      res.json(updatedSession);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update session" });
+    }
+  });
+
+  // Chat routes
+  app.get("/api/chat-messages/:sessionId", async (req, res) => {
+    try {
+      const sessionId = parseInt(req.params.sessionId);
+      const messages = await storage.getChatMessagesBySession(sessionId);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get chat messages" });
+    }
+  });
+
+  app.post("/api/chat-messages", async (req, res) => {
+    try {
+      const validatedData = insertChatMessageSchema.parse(req.body);
+      const message = await storage.createChatMessage(validatedData);
+      res.json(message);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid message data" });
+    }
+  });
+
+  // Conversation AI routes
+  app.post("/api/conversation/respond", async (req, res) => {
+    try {
+      const { message, history } = req.body;
+      const response = await generateConversationResponse(message, history || []);
+      res.json(response);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate response: " + (error as Error).message });
+    }
+  });
+
+  app.get("/api/conversation/scenario", async (req, res) => {
+    try {
+      const scenario = await generatePracticeScenario();
+      res.json({ scenario });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate scenario" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
