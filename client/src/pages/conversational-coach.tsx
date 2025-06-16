@@ -60,99 +60,65 @@ export default function ConversationalCoach() {
     },
   });
 
-  // Audio Recording and Whisper AI functions
-  const initializeAudioRecording = async () => {
+  // Initialize browser speech recognition for hands-free operation
+  const initializeSpeechRecognition = () => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Media devices not supported');
+      // Use browser's built-in speech recognition as fallback
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        setIsRecordingSupported(false);
+        return;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
-        } 
-      });
-      
-      // Check if MediaRecorder supports webm format
-      let mimeType = 'audio/webm;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'audio/wav';
-        }
-      }
-      
-      const recorder = new MediaRecorder(stream, { mimeType });
-      
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        console.log('Speech recognition started');
       };
-      
-      recorder.onstop = async () => {
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        console.log('Speech recognized:', transcript);
+        setInputValue(transcript);
         setIsListening(false);
         
-        if (audioChunksRef.current.length === 0) {
-          toast({
-            title: "Recording Error",
-            description: "No audio data recorded. Please try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        audioChunksRef.current = []; // Clear chunks
-        
-        // Check if the blob has content
-        if (audioBlob.size === 0) {
-          toast({
-            title: "Recording Error",
-            description: "No audio content recorded. Please try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        try {
-          console.log('Sending audio blob to Whisper AI:', audioBlob.size, 'bytes', 'type:', audioBlob.type);
-          const transcription = await api.transcribeAudio(audioBlob);
-          if (transcription.text && transcription.text.trim()) {
-            setInputValue(transcription.text);
-            toast({
-              title: "Speech Recognized",
-              description: `"${transcription.text.substring(0, 50)}${transcription.text.length > 50 ? '...' : ''}"`,
-            });
-          } else {
-            toast({
-              title: "No Speech Detected",
-              description: "Please speak clearly and try again.",
-              variant: "destructive",
-            });
+        // Auto-send message for hands-free operation
+        setTimeout(() => {
+          if (transcript.trim()) {
+            handleSendMessage();
           }
-        } catch (error) {
-          console.error('Transcription error:', error);
+        }, 500);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        
+        if (event.error === 'not-allowed') {
           toast({
-            title: "Voice Error",
-            description: "Could not transcribe speech. Please try again.",
+            title: "Microphone Access Denied",
+            description: "Please allow microphone access in your browser to use voice input.",
             variant: "destructive",
           });
         }
       };
-      
-      mediaRecorderRef.current = recorder;
+
+      recognition.onend = () => {
+        setIsListening(false);
+        console.log('Speech recognition ended');
+      };
+
+      mediaRecorderRef.current = recognition;
       setIsRecordingSupported(true);
     } catch (error) {
-      console.error('Microphone access error:', error);
+      console.error('Speech recognition initialization error:', error);
       setIsRecordingSupported(false);
-      toast({
-        title: "Microphone Access Required",
-        description: "Please allow microphone access in your browser settings for voice input.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -181,38 +147,28 @@ export default function ConversationalCoach() {
     }
   };
 
-  const startListening = async () => {
+  const startListening = () => {
     try {
-      if (!mediaRecorderRef.current) {
-        await initializeAudioRecording();
-      }
-      
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive') {
-        audioChunksRef.current = [];
-        setIsListening(true);
-        mediaRecorderRef.current.start(1000); // Record in 1-second chunks
-        
-        // Auto-stop after 10 seconds to prevent long recordings
-        setTimeout(() => {
-          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-            stopListening();
-          }
-        }, 10000);
+      if (mediaRecorderRef.current && !isListening) {
+        mediaRecorderRef.current.start();
       }
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error('Error starting speech recognition:', error);
       toast({
-        title: "Recording Error",
-        description: "Could not start voice recording. Please check microphone permissions.",
+        title: "Voice Input Error",
+        description: "Could not start voice recognition. Please check microphone permissions.",
         variant: "destructive",
       });
     }
   };
 
   const stopListening = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-      setIsListening(false);
+    try {
+      if (mediaRecorderRef.current && isListening) {
+        mediaRecorderRef.current.stop();
+      }
+    } catch (error) {
+      console.error('Error stopping speech recognition:', error);
     }
   };
 
@@ -284,13 +240,13 @@ export default function ConversationalCoach() {
   }, [messages]);
 
   useEffect(() => {
-    // Initialize audio recording
-    initializeAudioRecording();
+    // Initialize speech recognition
+    initializeSpeechRecognition();
     
     // Initialize conversation with welcome message
     const welcomeMessage: Message = {
       id: "welcome",
-      content: "Hello! I'm your English coach. Let's practice some conversations you might have on the road. You can speak to me using the microphone button for hands-free practice. What scenario would you like to practice?",
+      content: "Hello! I'm your English coach. Just tap the microphone and speak - I'll listen and respond automatically. What driving situation would you like to practice?",
       isUser: false,
       timestamp: new Date(),
     };
@@ -478,63 +434,13 @@ export default function ConversationalCoach() {
         {/* Voice Instructions */}
         <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
           {isListening ? (
-            "🎤 Speak now - I'm listening with Whisper AI..."
+            "Listening... Speak now"
           ) : isRecordingSupported ? (
-            "Tap the microphone for hands-free practice with AI speech recognition"
+            "Tap microphone to speak hands-free"
           ) : (
-            "Upload an audio file for Whisper AI transcription or type your message"
+            "Voice not available - please type your message"
           )}
         </div>
-        
-        {/* Demo Button for Testing Whisper AI */}
-        {!isRecordingSupported && (
-          <div className="mt-2 flex justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // Generate a sample audio file using TTS and then transcribe it back
-                const testText = "Hello, I'm a truck driver practicing my English communication skills for professional situations.";
-                
-                toast({
-                  title: "Testing Whisper AI",
-                  description: "Generating speech then transcribing it back...",
-                });
-
-                // Generate speech then transcribe
-                api.generateSpeech(testText)
-                  .then(audioBlob => api.transcribeAudio(audioBlob))
-                  .then(transcription => {
-                    if (transcription.text && transcription.text.trim()) {
-                      setInputValue(transcription.text);
-                      toast({
-                        title: "Whisper AI Test Success",
-                        description: `Original: "${testText.substring(0, 30)}..."\nTranscribed: "${transcription.text.substring(0, 30)}..."`,
-                      });
-                    } else {
-                      toast({
-                        title: "Whisper AI Test",
-                        description: "No text was transcribed from the audio.",
-                        variant: "destructive",
-                      });
-                    }
-                  })
-                  .catch(error => {
-                    console.error('Whisper demo error:', error);
-                    toast({
-                      title: "Demo Error",
-                      description: "Could not complete the Whisper AI demonstration.",  
-                      variant: "destructive",
-                    });
-                  });
-              }}
-              disabled={conversationMutation.isPending}
-              className="text-xs"
-            >
-              Test Whisper AI Demo
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
