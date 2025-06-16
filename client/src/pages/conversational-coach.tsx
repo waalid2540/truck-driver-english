@@ -98,15 +98,28 @@ export default function ConversationalCoach() {
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         console.log('Speech recognized:', transcript);
-        setInputValue(transcript);
         setIsListening(false);
         
-        // Auto-send message for hands-free operation
-        setTimeout(() => {
-          if (transcript.trim()) {
-            handleSendMessage();
-          }
-        }, 500);
+        // Directly process the message without setting inputValue first
+        if (transcript.trim() && !conversationMutation.isPending) {
+          console.log('Sending message to AI:', transcript);
+          
+          const userMessage: Message = {
+            id: Date.now().toString(),
+            content: transcript,
+            isUser: true,
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, userMessage]);
+          setConversationHistory(prev => [...prev, { role: 'user', content: transcript }]);
+          
+          // Send to AI immediately
+          conversationMutation.mutate({
+            message: transcript,
+            history: conversationHistory,
+          });
+        }
       };
 
       recognition.onerror = (event: any) => {
