@@ -21,8 +21,9 @@ export default function ConversationalCoach() {
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [isListening, setIsListening] = useState(false);
   const [isAutoReading, setIsAutoReading] = useState(true);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  const [isRecordingSupported, setIsRecordingSupported] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -79,24 +80,22 @@ export default function ConversationalCoach() {
       if (!MediaRecorder.isTypeSupported(mimeType)) {
         mimeType = 'audio/webm';
         if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'audio/mp4';
+          mimeType = 'audio/wav';
         }
       }
       
       const recorder = new MediaRecorder(stream, { mimeType });
       
-      let chunks: Blob[] = [];
-      
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          chunks.push(event.data);
+          audioChunksRef.current.push(event.data);
         }
       };
       
       recorder.onstop = async () => {
         setIsListening(false);
         
-        if (chunks.length === 0) {
+        if (audioChunksRef.current.length === 0) {
           toast({
             title: "Recording Error",
             description: "No audio data recorded. Please try again.",
@@ -105,13 +104,28 @@ export default function ConversationalCoach() {
           return;
         }
         
-        const audioBlob = new Blob(chunks, { type: mimeType });
-        chunks = []; // Clear chunks
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        audioChunksRef.current = []; // Clear chunks
+        
+        // Check if the blob has content
+        if (audioBlob.size === 0) {
+          toast({
+            title: "Recording Error",
+            description: "No audio content recorded. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
         
         try {
+          console.log('Sending audio blob to Whisper AI:', audioBlob.size, 'bytes', 'type:', audioBlob.type);
           const transcription = await api.transcribeAudio(audioBlob);
           if (transcription.text && transcription.text.trim()) {
             setInputValue(transcription.text);
+            toast({
+              title: "Speech Recognized",
+              description: `"${transcription.text.substring(0, 50)}${transcription.text.length > 50 ? '...' : ''}"`,
+            });
           } else {
             toast({
               title: "No Speech Detected",
@@ -129,9 +143,11 @@ export default function ConversationalCoach() {
         }
       };
       
-      setMediaRecorder(recorder);
+      mediaRecorderRef.current = recorder;
+      setIsRecordingSupported(true);
     } catch (error) {
       console.error('Microphone access error:', error);
+      setIsRecordingSupported(false);
       toast({
         title: "Microphone Access Required",
         description: "Please allow microphone access in your browser settings for voice input.",
@@ -166,24 +182,36 @@ export default function ConversationalCoach() {
   };
 
   const startListening = async () => {
-    if (mediaRecorder && mediaRecorder.state === 'inactive') {
-      setAudioChunks([]);
-      setIsListening(true);
-      mediaRecorder.start();
-    } else if (!mediaRecorder) {
-      await initializeAudioRecording();
-      // Try again after initialization
-      if (mediaRecorder && mediaRecorder.state === 'inactive') {
-        setAudioChunks([]);
-        setIsListening(true);
-        mediaRecorder.start();
+    try {
+      if (!mediaRecorderRef.current) {
+        await initializeAudioRecording();
       }
+      
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive') {
+        audioChunksRef.current = [];
+        setIsListening(true);
+        mediaRecorderRef.current.start(1000); // Record in 1-second chunks
+        
+        // Auto-stop after 10 seconds to prevent long recordings
+        setTimeout(() => {
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            stopListening();
+          }
+        }, 10000);
+      }
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Recording Error",
+        description: "Could not start voice recording. Please check microphone permissions.",
+        variant: "destructive",
+      });
     }
   };
 
   const stopListening = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
       setIsListening(false);
     }
   };

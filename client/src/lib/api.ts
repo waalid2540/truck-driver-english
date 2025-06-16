@@ -56,8 +56,19 @@ export const api = {
   // Whisper AI endpoints
   transcribeAudio: (audioBlob: Blob) => {
     const formData = new FormData();
-    formData.append('audio', audioBlob, 'audio.webm');
-    return apiRequest('POST', '/api/transcribe', formData).then(res => res.json());
+    formData.append('audio', audioBlob, 'recording.webm');
+    
+    // Use fetch directly for file upload to avoid Content-Type issues
+    return fetch('/api/transcribe', {
+      method: 'POST',
+      body: formData
+    }).then(async res => {
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+      return res.json();
+    });
   },
 
   generateSpeech: (text: string) =>
