@@ -21,14 +21,15 @@ The application is designed as a mobile-first progressive web app with a maximum
 
 ### Frontend Architecture
 - **Component Library**: shadcn/ui components with Radix UI primitives
-- **Responsive Design**: Mobile-optimized with trucking-themed colors (blue, orange, gray)
+- **Responsive Design**: Mobile-optimized with trucking-themed colors (blue, orange, gray) and full dark mode support
 - **Navigation**: Bottom tab navigation with Home, DOT Practice, Coach, and Settings
 - **Forms**: React Hook Form with Zod validation
+- **Voice Interface**: Hands-free speech recognition and text-to-speech for driver safety
 
 ### Backend Architecture
 - **API Routes**: RESTful endpoints for users, practice sessions, DOT categories/questions, and chat
 - **Storage Layer**: Abstracted storage interface with in-memory implementation (ready for database integration)
-- **AI Integration**: OpenAI GPT-4o for conversational coaching
+- **AI Integration**: OpenAI GPT-4o for conversational coaching with voice-optimized responses
 - **Session Management**: PostgreSQL session store with connect-pg-simple
 
 ### Database Schema
@@ -83,8 +84,12 @@ The application is designed as a mobile-first progressive web app with a maximum
 3. Static files served from Express in production
 
 ## Changelog
-- June 16, 2025. Initial setup
+- June 16, 2025: Initial setup with DOT practice, conversational coach, and settings
+- June 16, 2025: Added full dark mode support across all components
+- June 16, 2025: Implemented hands-free voice interface with speech recognition and text-to-speech for driver safety
+- June 16, 2025: Enhanced OpenAI integration with voice-optimized responses for conversational coaching
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Design preference: Dark mode enabled by default for better visibility while driving.
