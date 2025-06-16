@@ -114,7 +114,7 @@ export default function ConversationalCoach() {
   return (
     <div className="flex flex-col h-screen pb-20">
       {/* Chat Header */}
-      <div className="bg-white border-b border-gray-200 p-4 flex items-center space-x-3">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center space-x-3">
         <Link href="/">
           <Button variant="ghost" size="sm" className="p-2">
             <ArrowLeft className="h-5 w-5" />
@@ -125,7 +125,7 @@ export default function ConversationalCoach() {
             <Bot className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="font-medium text-gray-900">AI English Coach</h3>
+            <h3 className="font-medium text-gray-900 dark:text-gray-100">AI English Coach</h3>
             <p className="text-sm text-green-600 flex items-center">
               <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
               Online
@@ -144,7 +144,7 @@ export default function ConversationalCoach() {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
         {messages.map((message) => (
           <ChatMessage
             key={message.id}

@@ -146,7 +146,7 @@ export default function DotPractice() {
     return (
       <div className="pb-20">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-4 flex items-center space-x-3">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center space-x-3">
           <Button
             variant="ghost"
             size="sm"
@@ -156,8 +156,8 @@ export default function DotPractice() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h2 className="text-lg font-medium">DOT Practice</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">DOT Practice</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Question {currentQuestionIndex + 1} of {questions.length}
             </p>
           </div>
@@ -166,7 +166,7 @@ export default function DotPractice() {
         <div className="p-4 space-y-6">
           {/* Progress */}
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
               <span>Progress</span>
               <span>{Math.round(progress)}%</span>
             </div>
@@ -176,7 +176,7 @@ export default function DotPractice() {
           {/* Question */}
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-lg font-medium mb-4">{currentQuestion.question}</h3>
+              <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">{currentQuestion.question}</h3>
               
               <div className="space-y-3">
                 {(currentQuestion.options as string[]).map((option, index) => {

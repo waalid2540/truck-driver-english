@@ -61,12 +61,12 @@ export default function Home() {
           <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
-                <div className="bg-orange-100 p-3 rounded-xl">
+                <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-xl">
                   <ClipboardCheck className="text-truck-orange h-6 w-6" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-gray-900 mb-1">DOT Practice English</h4>
-                  <p className="text-gray-600 text-sm mb-3">Practice regulations, safety terms, and documentation</p>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">DOT Practice English</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">Practice regulations, safety terms, and documentation</p>
                   <Link href="/dot-practice">
                     <Button className="bg-truck-orange hover:bg-orange-600 text-white">
                       Start Practice
@@ -81,12 +81,12 @@ export default function Home() {
           <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
-                <div className="bg-blue-100 p-3 rounded-xl">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-xl">
                   <MessageCircle className="text-truck-blue h-6 w-6" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-gray-900 mb-1">Conversational Coach</h4>
-                  <p className="text-gray-600 text-sm mb-3">AI-powered conversations for real-world situations</p>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">Conversational Coach</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">AI-powered conversations for real-world situations</p>
                   <Link href="/coach">
                     <Button className="bg-truck-blue hover:bg-blue-700 text-white">
                       Start Conversation
@@ -101,20 +101,20 @@ export default function Home() {
         {/* Recent Progress */}
         <Card>
           <CardContent className="p-6">
-            <h4 className="font-medium text-gray-900 mb-4">Recent Progress</h4>
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Recent Progress</h4>
             <div className="space-y-3">
               {recentSessions && recentSessions.length > 0 ? (
                 recentSessions.map((session: any) => (
-                  <div key={session.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={session.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className={`w-2 h-2 rounded-full ${
                         session.type === 'dot' ? 'bg-orange-500' : 'bg-blue-500'
                       }`}></div>
                       <div>
-                        <p className="text-sm font-medium">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {session.type === 'dot' ? 'DOT Practice' : 'Conversation'}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {new Date(session.createdAt).toLocaleDateString()}, {session.duration} min
                         </p>
                       </div>
@@ -127,7 +127,7 @@ export default function Home() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <p>No practice sessions yet.</p>
                   <p className="text-sm">Start your first practice session above!</p>
                 </div>
