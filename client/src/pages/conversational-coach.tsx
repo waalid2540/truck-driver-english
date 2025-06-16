@@ -21,7 +21,8 @@ export default function ConversationalCoach() {
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [isListening, setIsListening] = useState(false);
   const [isAutoReading, setIsAutoReading] = useState(true);
-  const [recognition, setRecognition] = useState<any>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -44,9 +45,9 @@ export default function ConversationalCoach() {
       setMessages(prev => [...prev, aiMessage]);
       setConversationHistory(prev => [...prev, { role: 'assistant', content: response.message }]);
       
-      // Auto-read AI response if enabled
+      // Auto-read AI response if enabled using OpenAI TTS
       if (isAutoReading) {
-        speakText(response.message);
+        playAIGeneratedSpeech(response.message);
       }
     },
     onError: (error) => {
@@ -58,41 +59,47 @@ export default function ConversationalCoach() {
     },
   });
 
-  // Speech Recognition and Text-to-Speech functions
-  const initializeSpeechRecognition = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
+  // Audio Recording and Whisper AI functions
+  const initializeAudioRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
       
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-      recognitionInstance.lang = 'en-US';
-      
-      recognitionInstance.onstart = () => {
-        setIsListening(true);
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          setAudioChunks(prev => [...prev, event.data]);
+        }
       };
       
-      recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputValue(transcript);
-        setIsListening(false);
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        setAudioChunks([]);
+        
+        try {
+          const transcription = await api.transcribeAudio(audioBlob);
+          setInputValue(transcription.text);
+          setIsListening(false);
+        } catch (error) {
+          console.error('Transcription error:', error);
+          toast({
+            title: "Voice Error",
+            description: "Could not transcribe speech. Please try again.",
+            variant: "destructive",
+          });
+          setIsListening(false);
+        }
       };
       
-      recognitionInstance.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        toast({
-          title: "Voice Error",
-          description: "Could not understand speech. Please try again.",
-          variant: "destructive",
-        });
-      };
-      
-      recognitionInstance.onend = () => {
-        setIsListening(false);
-      };
-      
-      setRecognition(recognitionInstance);
+      setMediaRecorder(recorder);
+    } catch (error) {
+      console.error('Microphone access error:', error);
+      toast({
+        title: "Microphone Access",
+        description: "Please allow microphone access for voice input.",
+        variant: "destructive",
+      });
     }
   };
 

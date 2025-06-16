@@ -1,10 +1,26 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import multer from "multer";
 import { storage } from "./storage";
 import { generateConversationResponse, generatePracticeScenario } from "./services/openai";
+import { transcribeAudio, generateSpeech } from "./services/whisper";
 import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure multer for audio file uploads
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('audio/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only audio files are allowed'));
+      }
+    },
+  });
   // User routes
   app.get("/api/user/:id", async (req, res) => {
     try {
@@ -136,6 +152,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ scenario });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate scenario" });
+    }
+  });
+
+  // Whisper AI transcription endpoint
+  app.post("/api/transcribe", upload.single('audio'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No audio file provided" });
+      }
+
+      const transcription = await transcribeAudio(req.file.buffer, req.file.originalname || 'audio.webm');
+      res.json(transcription);
+    } catch (error) {
+      console.error("Transcription error:", error);
+      res.status(500).json({ message: "Failed to transcribe audio: " + (error as Error).message });
+    }
+  });
+
+  // Text-to-speech endpoint
+  app.post("/api/speak", async (req, res) => {
+    try {
+      const { text } = req.body;
+      if (!text) {
+        return res.status(400).json({ message: "No text provided" });
+      }
+
+      const audioBuffer = await generateSpeech(text);
+      
+      res.set({
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': audioBuffer.length,
+      });
+      
+      res.send(audioBuffer);
+    } catch (error) {
+      console.error("TTS error:", error);
+      res.status(500).json({ message: "Failed to generate speech: " + (error as Error).message });
     }
   });
 

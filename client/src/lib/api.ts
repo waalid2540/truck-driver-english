@@ -52,4 +52,14 @@ export const api = {
   
   generatePracticeScenario: () =>
     apiRequest('GET', '/api/conversation/scenario').then(res => res.json()),
+
+  // Whisper AI endpoints
+  transcribeAudio: (audioBlob: Blob) => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'audio.webm');
+    return apiRequest('POST', '/api/transcribe', formData).then(res => res.json());
+  },
+
+  generateSpeech: (text: string) =>
+    apiRequest('POST', '/api/speak', { text }).then(res => res.blob()),
 };
