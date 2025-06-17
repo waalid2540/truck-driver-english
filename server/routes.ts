@@ -4,6 +4,7 @@ import multer from "multer";
 import { storage } from "./storage";
 import { generateConversationResponse, generatePracticeScenario } from "./services/openai";
 import { transcribeAudio, generateSpeech } from "./services/whisper";
+import { generateDOTSpeech } from "./services/gtts-service";
 import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -200,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Professional DOT practice voice endpoint
+  // DOT practice voice endpoint using GTTS for better mobile volume
   app.post("/api/speak-dot", async (req, res) => {
     try {
       const { text, voice } = req.body;
@@ -208,9 +209,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No text provided" });
       }
 
-      // Generate professional AI voice for DOT training
+      // Generate GTTS voice optimized for mobile volume
       const voiceType = voice === 'driver' ? 'driver' : 'officer';
-      const audioBuffer = await generateSpeech(text, voiceType);
+      const audioBuffer = await generateDOTSpeech(text, voiceType);
       
       res.set({
         'Content-Type': 'audio/mpeg',
@@ -220,8 +221,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.send(audioBuffer);
     } catch (error) {
-      console.error("DOT voice generation error:", error);
-      res.status(500).json({ message: "Failed to generate professional voice: " + (error as Error).message });
+      console.error("GTTS voice generation error:", error);
+      res.status(500).json({ message: "Failed to generate GTTS voice: " + (error as Error).message });
     }
   });
 

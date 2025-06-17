@@ -146,18 +146,56 @@ export default function DotPractice() {
     const currentQuestion = questions[currentQuestionIndex];
     setIsSpeaking(true);
 
-    // Use browser synthesis for better mobile compatibility and volume
+    try {
+      // Try GTTS first for better mobile volume
+      const response = await fetch('/api/speak-dot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: currentQuestion.question,
+          voice: 'officer'
+        }),
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audio = new Audio(audioUrl);
+        audio.volume = 1.0;
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          // Auto-start listening after officer speaks
+          if (isAudioEnabled && !userResponse) {
+            setTimeout(() => startListening(), 500);
+          }
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+        return;
+      }
+    } catch (error) {
+      console.log('GTTS not available, using browser synthesis');
+    }
+
+    // Fallback to browser synthesis
     if (synthRef.current) {
-      synthRef.current.cancel(); // Stop any current speech
+      synthRef.current.cancel();
       
       const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
-      
-      // Mobile-optimized settings for maximum clarity and volume
       utterance.rate = 0.7;
       utterance.pitch = 0.8;
       utterance.volume = 1.0;
       
-      // Find the best available voice for mobile
       const voices = synthRef.current.getVoices();
       const bestVoice = voices.find(voice => 
         voice.lang.startsWith('en') && 
@@ -170,7 +208,6 @@ export default function DotPractice() {
       
       utterance.onend = () => {
         setIsSpeaking(false);
-        // Auto-start listening after officer speaks
         if (isAudioEnabled && !userResponse) {
           setTimeout(() => startListening(), 500);
         }
