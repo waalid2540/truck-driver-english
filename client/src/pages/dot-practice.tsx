@@ -4,10 +4,18 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Shield, FileText, TrafficCone, Check, X, Volume2, VolumeX, Mic, MicOff, Repeat, PlayCircle } from "lucide-react";
+import { ArrowLeft, Shield, FileText, TrafficCone, Check, X, Volume2, VolumeX, Mic, MicOff, Repeat, PlayCircle, Truck, Package } from "lucide-react";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+// Extend Window interface for speech recognition
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 export default function DotPractice() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -22,7 +30,7 @@ export default function DotPractice() {
   const [isListening, setIsListening] = useState(false);
   const [autoRepeat, setAutoRepeat] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   
   const { toast } = useToast();
@@ -37,20 +45,20 @@ export default function DotPractice() {
         recognitionRef.current.interimResults = false;
         recognitionRef.current.lang = 'en-US';
         
-        recognitionRef.current.onresult = (event) => {
+        recognitionRef.current.onresult = (event: any) => {
           const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
           console.log('Speech recognized:', transcript);
           handleVoiceCommand(transcript);
         };
         
-        recognitionRef.current.onerror = (event) => {
+        recognitionRef.current.onerror = (event: any) => {
           console.error('Speech recognition error:', event.error);
           setIsListening(false);
         };
         
         recognitionRef.current.onend = () => {
           setIsListening(false);
-          if (autoRepeat && isAudioEnabled && questions && selectedCategory) {
+          if (autoRepeat && isAudioEnabled && selectedCategory) {
             // Auto-restart listening after speech ends
             setTimeout(() => startListening(), 1000);
           }
@@ -59,7 +67,7 @@ export default function DotPractice() {
       
       synthRef.current = window.speechSynthesis;
     }
-  }, [autoRepeat, isAudioEnabled, questions, selectedCategory]);
+  }, [autoRepeat, isAudioEnabled, selectedCategory]);
 
   // Speech synthesis function
   const speak = async (text: string) => {
@@ -219,6 +227,14 @@ export default function DotPractice() {
       duration: 0,
       completed: false,
     });
+
+    // Start audio if enabled
+    if (isAudioEnabled) {
+      setTimeout(() => {
+        speak("Starting DOT practice session. Please wait for the first question.");
+        setTimeout(() => startListening(), 2000);
+      }, 1000);
+    }
   };
 
   const handleAnswerSelect = (answer: string) => {
@@ -236,12 +252,24 @@ export default function DotPractice() {
     }
 
     setShowResult(true);
+
+    // Provide audio feedback
+    if (isAudioEnabled) {
+      const feedback = isCorrect ? "Correct!" : "Incorrect.";
+      const explanation = currentQuestion.explanation ? ` ${currentQuestion.explanation}` : "";
+      speak(`${feedback}${explanation}`);
+    }
     
     setTimeout(() => {
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(prev => prev + 1);
         setSelectedAnswer(null);
         setShowResult(false);
+        
+        // Read next question automatically
+        if (isAudioEnabled) {
+          setTimeout(() => readCurrentQuestion(), 1000);
+        }
       } else {
         // Practice complete
         const finalScore = Math.round(((score + (isCorrect ? 1 : 0)) / questions.length) * 100);
@@ -255,9 +283,14 @@ export default function DotPractice() {
             },
           });
         }
-        resetPractice();
+        
+        if (isAudioEnabled) {
+          speak(`Practice session complete! You scored ${finalScore} percent. Great job!`);
+        }
+        
+        setTimeout(() => resetPractice(), 3000);
       }
-    }, 2000);
+    }, 3000);
   };
 
   const resetPractice = () => {
@@ -267,6 +300,7 @@ export default function DotPractice() {
     setShowResult(false);
     setScore(0);
     setSessionId(null);
+    stopListening();
   };
 
   const getCategoryIcon = (name: string) => {
@@ -277,6 +311,10 @@ export default function DotPractice() {
         return FileText;
       case 'road terminology':
         return TrafficCone;
+      case 'vehicle operations':
+        return Truck;
+      case 'loading & cargo':
+        return Package;
       default:
         return Shield;
     }
@@ -302,21 +340,78 @@ export default function DotPractice() {
     return (
       <div className="pb-20">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={resetPractice}
-            className="p-2"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">DOT Practice</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Question {currentQuestionIndex + 1} of {questions.length}
-            </p>
+        <div className="bg-white border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetPractice}
+                className="p-2"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">DOT Practice</h2>
+                <p className="text-sm text-gray-600">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </p>
+              </div>
+            </div>
+            
+            {/* Audio Controls */}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAutoRepeat(!autoRepeat)}
+                className={`p-2 ${autoRepeat ? 'text-truck-blue' : 'text-gray-400'}`}
+                title="Auto-repeat listening"
+              >
+                <Repeat className="h-4 w-4" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={readCurrentQuestion}
+                className="p-2"
+                title="Read question aloud"
+                disabled={isSpeaking}
+              >
+                <PlayCircle className={`h-4 w-4 ${isSpeaking ? 'text-truck-blue' : 'text-gray-600'}`} />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={isListening ? stopListening : startListening}
+                className={`p-2 ${isListening ? 'text-green-600' : 'text-gray-600'}`}
+                title={isListening ? 'Stop listening' : 'Start voice recognition'}
+              >
+                {isListening ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsAudioEnabled(!isAudioEnabled)}
+                className={`p-2 ${isAudioEnabled ? 'text-truck-blue' : 'text-gray-400'}`}
+                title={isAudioEnabled ? 'Disable audio' : 'Enable audio'}
+              >
+                {isAudioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
+          
+          {isListening && (
+            <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-green-700">Listening for your answer...</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-4 space-y-6">
