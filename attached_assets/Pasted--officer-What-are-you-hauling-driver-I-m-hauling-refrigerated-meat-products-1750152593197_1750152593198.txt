@@ -1,0 +1,795 @@
+
+[
+  {
+    "officer": "What are you hauling?",
+    "driver": "I'm hauling refrigerated meat products for a grocery chain."
+  },
+  {
+    "officer": "How far are you from your delivery location?",
+    "driver": "I'm about 120 miles away from my drop-off point."
+  },
+  {
+    "officer": "Are your load straps secure?",
+    "driver": "Yes, I double-checked all straps before leaving the warehouse."
+  },
+  {
+    "officer": "When did you last take a break?",
+    "driver": "About 30 minutes ago, I stopped at a rest area for lunch."
+  },
+  {
+    "officer": "Are you hauling perishable goods?",
+    "driver": "Yes, I'm transporting frozen vegetables in a reefer trailer."
+  },
+  {
+    "officer": "What company are you driving for?",
+    "driver": "I'm with American Freight Logistics, based in Chicago."
+  },
+  {
+    "officer": "Are you aware of any violations on your record?",
+    "driver": "No, my record is clean for the past two years."
+  },
+  {
+    "officer": "Are you using a paper log or an ELD?",
+    "driver": "I'm using an Electronic Logging Device to track my hours."
+  },
+  {
+    "officer": "Have you had any alcohol in the last 24 hours?",
+    "driver": "No, officer. I haven't consumed any alcohol."
+  },
+  {
+    "officer": "Is your horn and lighting system working properly?",
+    "driver": "Yes, I tested them during my pre-trip inspection."
+  },
+  {
+    "officer": "Is your speed limiter functioning correctly?",
+    "driver": "Yes, it's working as required and set at 65 mph."
+  },
+  {
+    "officer": "Is your fire extinguisher charged and accessible?",
+    "driver": "Yes, it's fully charged and mounted right behind my seat."
+  },
+  {
+    "officer": "Is your trailer properly sealed?",
+    "driver": "Yes, the seal is intact and matches the shipping paperwork."
+  },
+  {
+    "officer": "Have you had any recent accidents or tickets?",
+    "driver": "No, I've had a clean record for over a year now."
+  },
+  {
+    "officer": "Have you completed your pre-trip inspection today?",
+    "driver": "Yes, I checked the tires, lights, brakes, and fluids this morning."
+  },
+  {
+    "officer": "Did you secure the back door of your trailer?",
+    "driver": "Yes, it's locked and sealed properly."
+  },
+  {
+    "officer": "How long have you been a CDL driver?",
+    "driver": "I've been driving commercially for 7 years now."
+  },
+  {
+    "officer": "Did you encounter any mechanical issues today?",
+    "driver": "No issues today, everything has been running smoothly."
+  },
+  {
+    "officer": "Is your load balanced properly?",
+    "driver": "Yes, it was checked and balanced during loading."
+  },
+  {
+    "officer": "Where did you last refuel?",
+    "driver": "I stopped at the Love's truck stop 40 miles back."
+  },
+  {
+    "officer": "Have you checked your tire pressure today?",
+    "driver": "Yes, I used a gauge before starting my shift this morning."
+  },
+  {
+    "officer": "Do you know your trailer's height and weight?",
+    "driver": "Yes, the height is 13 feet 6 inches and weight is 34,000 pounds empty."
+  },
+  {
+    "officer": "Can you explain what's in your load today?",
+    "driver": "Sure, I'm hauling pallets of dry food and packaged goods."
+  },
+  {
+    "officer": "How long have you been working with your current company?",
+    "driver": "I've been with them for about 14 months."
+  },
+  {
+    "officer": "What time did you start your shift today?",
+    "driver": "I began my shift at 6:30 this morning."
+  },
+  {
+    "officer": "Do you have reflective triangles or flares on board?",
+    "driver": "Yes, officer. I keep them stored in the side box."
+  },
+  {
+    "officer": "Can I see your driver's license and medical certificate?",
+    "driver": "Yes, officer. Here are both documents."
+  },
+  {
+    "officer": "Do you know why I pulled you over?",
+    "driver": "I'm not sure, officer. Was I speeding or crossing a line?"
+  },
+  {
+    "officer": "Are you familiar with the HOS rules?",
+    "driver": "Yes, I follow the Hours of Service rules carefully."
+  },
+  {
+    "officer": "When was your last safety inspection?",
+    "driver": "It was done last week before I left the terminal."
+  },
+  {
+    "officer": "Are you carrying your registration and insurance papers?",
+    "driver": "Yes, officer. They're in the glove compartment."
+  },
+  {
+    "officer": "How long have you been driving today?",
+    "driver": "I've been on the road for 5 hours so far today."
+  },
+  {
+    "officer": "Where are you headed today?",
+    "driver": "I'm driving to Houston, Texas to deliver a load of produce."
+  },
+  {
+    "officer": "Do you have your bill of lading?",
+    "driver": "Yes, officer. Here it is, showing pickup and delivery details."
+  },
+  {
+    "officer": "Do you have a valid medical card?",
+    "driver": "Yes, officer. It's in my wallet and still valid for 8 months."
+  },
+  {
+    "officer": "Do you know what your tire tread depth is?",
+    "driver": "Yes, it's above the legal limit—checked this morning."
+  },
+  {
+    "officer": "Are you hauling any hazardous materials?",
+    "driver": "No, this is a dry van with general consumer goods."
+  },
+  {
+    "officer": "How many hours have you rested in the past 24 hours?",
+    "driver": "I've had 10 hours of off-duty rest before starting this trip."
+  },
+  {
+    "officer": "Do you know your gross vehicle weight?",
+    "driver": "Yes, it's about 78,000 pounds loaded."
+  },
+  {
+    "officer": "Have you been feeling alert during your trip?",
+    "driver": "Yes, I'm fully rested and alert, officer."
+  },
+  {
+    "officer": "Are you carrying any oversized loads today?",
+    "driver": "No, officer. This load is within legal size and weight limits."
+  },
+  {
+    "officer": "Can you show me your emergency contact information?",
+    "driver": "Yes, it's listed on the back of my license and in my company profile."
+  },
+  {
+    "officer": "Is your ELD device synced properly?",
+    "driver": "Yes, it's working fine and synced with the vehicle's engine."
+  },
+  {
+    "officer": "When was your last drug and alcohol test?",
+    "driver": "It was two months ago, and I passed with no issues."
+  },
+  {
+    "officer": "Are you aware of your company's safety rating?",
+    "driver": "Yes, we currently hold a satisfactory safety rating from FMCSA."
+  },
+  {
+    "officer": "Do you have a co-driver today?",
+    "driver": "No, officer. I'm driving solo on this trip."
+  },
+  {
+    "officer": "Can you explain how you handled your cargo securement?",
+    "driver": "I used load locks and straps, checked every 150 miles."
+  },
+  {
+    "officer": "Have you had any recent vehicle repairs?",
+    "driver": "Yes, we just replaced the brake pads last week."
+  },
+  {
+    "officer": "What's your current duty status?",
+    "driver": "I'm currently on-duty, not driving."
+  },
+  {
+    "officer": "Did you review the weather before your route?",
+    "driver": "Yes, I checked and there are no alerts for my route."
+  },
+  {
+    "officer": "Have you inspected your brake system today?",
+    "driver": "Yes, I checked for leaks and air pressure levels this morning."
+  },
+  {
+    "officer": "Is your CDL currently valid and unrestricted?",
+    "driver": "Yes, officer. My CDL is valid and without restrictions."
+  },
+  {
+    "officer": "Do you carry a copy of the Federal Motor Carrier Safety Regulations?",
+    "driver": "Yes, I have a digital copy on my tablet."
+  },
+  {
+    "officer": "How many hours have you driven in the last 7 days?",
+    "driver": "I've driven around 42 hours this week."
+  },
+  {
+    "officer": "Are your mirrors and windows clean and unobstructed?",
+    "driver": "Yes, I cleaned all of them before departure today."
+  },
+  {
+    "officer": "Do you know how to use your fire extinguisher?",
+    "driver": "Yes, I've been trained and it's mounted behind my seat."
+  },
+  {
+    "officer": "Have you reported your last delivery to dispatch?",
+    "driver": "Yes, I checked in once I arrived at the receiver."
+  },
+  {
+    "officer": "Have you had any logbook violations in the past month?",
+    "driver": "No, officer. My logs have been in full compliance."
+  },
+  {
+    "officer": "Do you have an emergency reflective vest?",
+    "driver": "Yes, it's stored in the door pocket."
+  },
+  {
+    "officer": "When was the last time your truck was serviced?",
+    "driver": "It was serviced two weeks ago at our company shop."
+  },
+  {
+    "officer": "What would you do in case of a tire blowout?",
+    "driver": "I'd maintain control, pull over safely, and call for roadside help."
+  },
+  {
+    "officer": "Do you carry a paper backup log?",
+    "driver": "Yes, it's in my logbook folder in case the ELD fails."
+  },
+  {
+    "officer": "Can you describe how your cargo is loaded?",
+    "driver": "It's evenly distributed on pallets with load bars in place."
+  },
+  {
+    "officer": "Are your seat belts functioning correctly?",
+    "driver": "Yes, officer. I tested them before leaving the lot."
+  },
+  {
+    "officer": "Do you have your fuel receipts from the last state?",
+    "driver": "Yes, I saved them for IFTA reporting."
+  },
+  {
+    "officer": "Are you hauling a load that requires placards?",
+    "driver": "No, officer. This is a standard dry load."
+  },
+  {
+    "officer": "Is your air compressor functioning properly?",
+    "driver": "Yes, I checked the build-up time this morning."
+  },
+  {
+    "officer": "Do you know how to perform a leak-down test?",
+    "driver": "Yes, I follow DOT steps for that test regularly."
+  },
+  {
+    "officer": "Are your windshield wipers in good condition?",
+    "driver": "Yes, they're new and working well."
+  },
+  {
+    "officer": "Do you know where your ABS indicator light is?",
+    "driver": "Yes, it's on the dashboard and working correctly."
+  },
+  {
+    "officer": "Have you had any hours-of-service violations this quarter?",
+    "driver": "No, officer. I've stayed within all HOS limits."
+  },
+  {
+    "officer": "Can I see your reefer temperature logs?",
+    "driver": "Yes, I have them here in my trip records."
+  },
+  {
+    "officer": "When was your last load secured inspection?",
+    "driver": "It was done this morning at our shipper's dock."
+  },
+  {
+    "officer": "What's your tire inflation pressure today?",
+    "driver": "They're all at 100 PSI as required."
+  },
+  {
+    "officer": "Are your trailer lights all functional?",
+    "driver": "Yes, I confirmed during my pre-trip check."
+  },
+  {
+    "officer": "Do you have your permit for the oversized load?",
+    "driver": "Yes, it's attached to my trip sheet."
+  },
+  {
+    "officer": "Can I see your IFTA permit?",
+    "driver": "Yes, it's displayed inside the driver-side door."
+  },
+  {
+    "officer": "Do you carry a spill kit in case of leaks?",
+    "driver": "Yes, it's in the side equipment box."
+  },
+  {
+    "officer": "Do you know how to report a crash to FMCSA?",
+    "driver": "Yes, we follow our safety manager's protocol and file reports promptly."
+  },
+  {
+    "officer": "Can you provide your current trip manifest?",
+    "driver": "Yes, officer. Here's the manifest outlining all cargo and stops."
+  },
+  {
+    "officer": "Have you had any maintenance issues in the last month?",
+    "driver": "Just a minor issue with a tire, but it was fixed right away."
+  },
+  {
+    "officer": "Do you have an emergency contact listed with your company?",
+    "driver": "Yes, my company has my emergency contact on file."
+  },
+  {
+    "officer": "Do you carry a reflective vest for roadside inspections?",
+    "driver": "Yes, officer. It's stored in my side compartment."
+  },
+  {
+    "officer": "What's the total mileage for this trip?",
+    "driver": "It's about 1,200 miles from start to destination."
+  },
+  {
+    "officer": "Have you received any warnings this week?",
+    "driver": "No, officer. My log is clean for the week."
+  },
+  {
+    "officer": "Can you show proof of delivery for your last trip?",
+    "driver": "Yes, here is the signed delivery receipt from yesterday."
+  },
+  {
+    "officer": "What kind of brakes does your trailer use?",
+    "driver": "It uses air brakes, inspected this morning."
+  },
+  {
+    "officer": "Did you check your coupling devices today?",
+    "driver": "Yes, I inspected the kingpin and fifth wheel during pre-trip."
+  },
+  {
+    "officer": "How do you handle fatigue while driving long distances?",
+    "driver": "I take breaks every few hours and avoid driving when tired."
+  },
+  {
+    "officer": "How often do you perform full vehicle inspections?",
+    "driver": "I do a complete inspection before every trip and mid-trip on long hauls."
+  },
+  {
+    "officer": "Are your side mirrors adjusted correctly?",
+    "driver": "Yes, officer. I adjusted them before leaving the yard."
+  },
+  {
+    "officer": "Are you familiar with the nearest weigh station?",
+    "driver": "Yes, I passed it about 20 miles ago and everything was fine."
+  },
+  {
+    "officer": "Do you carry a first aid kit?",
+    "driver": "Yes, it's stored with the other safety equipment behind my seat."
+  },
+  {
+    "officer": "Are your turn signals and brake lights working properly?",
+    "driver": "Yes, I tested all lights during my inspection today."
+  },
+  {
+    "officer": "Have you ever had a DOT audit?",
+    "driver": "Not personally, but my company undergoes regular audits."
+  },
+  {
+    "officer": "Are you aware of the current weather advisory for your route?",
+    "driver": "Yes, I checked the weather before starting and have chains if needed."
+  },
+  {
+    "officer": "What's your trailer number?",
+    "driver": "It's trailer 40721, officer."
+  },
+  {
+    "officer": "Do you have a copy of your CDL medical examination report?",
+    "driver": "Yes, I have the certificate and the long-form in my folder."
+  },
+  {
+    "officer": "Do you carry spare fuses for electrical equipment?",
+    "driver": "Yes, I keep extra fuses in the dashboard compartment."
+  },
+  {
+    "officer": "Are you trained in using fire extinguishers?",
+    "driver": "Yes, I've completed safety training as part of onboarding."
+  },
+  {
+    "officer": "What speed were you traveling in the last construction zone?",
+    "driver": "I reduced to 45 mph as posted through the zone."
+  },
+  {
+    "officer": "Have you reviewed your logbook for errors today?",
+    "driver": "Yes, I checked everything this morning and it's accurate."
+  },
+  {
+    "officer": "When did you last attend a safety meeting?",
+    "driver": "Two weeks ago at our main terminal."
+  },
+  {
+    "officer": "Is your CB radio functioning?",
+    "driver": "Yes, it's working fine and I use it for traffic updates."
+  },
+  {
+    "officer": "Can you demonstrate your air brake check?",
+    "driver": "Yes, I can perform the air brake test for you now."
+  },
+  {
+    "officer": "What's the cargo value you're hauling today?",
+    "driver": "It's valued at around $85,000 according to the invoice."
+  },
+  {
+    "officer": "Do you have proof of your last drug test?",
+    "driver": "Yes, officer. My company has it on file and I carry a copy."
+  },
+  {
+    "officer": "What's your current fuel level?",
+    "driver": "I have about three-quarters of a tank."
+  },
+  {
+    "officer": "Have you crossed any state borders on this trip?",
+    "driver": "Yes, I've come from Nevada into California."
+  },
+  {
+    "officer": "Do you carry a spill kit for hazardous materials?",
+    "driver": "Yes, although I'm not hauling hazmat today, I have a kit on board."
+  },
+  {
+    "officer": "Can you show me your annual inspection sticker?",
+    "driver": "Yes, it's affixed to the driver-side door frame."
+  },
+  {
+    "officer": "Do you know the expiration date on your insurance?",
+    "driver": "Yes, it expires in three months — September 15th."
+  },
+  {
+    "officer": "Do you have any dashcam footage from today?",
+    "driver": "Yes, the dashcam records continuously and stores 48 hours of footage."
+  },
+  {
+    "officer": "How do you plan for your rest stops?",
+    "driver": "I use my ELD to plan breaks and mark safe rest areas in advance."
+  },
+  {
+    "officer": "How do you keep in touch with dispatch during long trips?",
+    "driver": "I use a hands-free phone and company mobile app to stay updated."
+  },
+  {
+    "officer": "Are you hauling any goods that require refrigeration?",
+    "driver": "Yes, I'm transporting frozen poultry at 28 degrees Fahrenheit."
+  },
+  {
+    "officer": "How do you prevent load shifts?",
+    "driver": "I use load bars, straps, and make sure everything is tightly secured."
+  },
+  {
+    "officer": "Do you carry snow chains or traction devices?",
+    "driver": "Yes, I carry chains during the winter season as required by law."
+  },
+  {
+    "officer": "What's your average fuel economy?",
+    "driver": "It's about 6.8 miles per gallon under full load."
+  },
+  {
+    "officer": "What do you do if your ELD malfunctions on the road?",
+    "driver": "I switch to paper logs and notify my carrier immediately."
+  },
+  {
+    "officer": "Are your wipers and washer fluid working correctly?",
+    "driver": "Yes, I tested both during my pre-trip check."
+  },
+  {
+    "officer": "Do you understand how to perform a brake test?",
+    "driver": "Yes, I can demonstrate a static and applied pressure test."
+  },
+  {
+    "officer": "Do you have a copy of your annual vehicle inspection?",
+    "driver": "Yes, it's in my document binder under inspections."
+  },
+  {
+    "officer": "Have you passed through any weigh stations today?",
+    "driver": "Yes, I stopped at one about 80 miles back."
+  },
+  {
+    "officer": "Is your DOT number clearly visible on the vehicle?",
+    "driver": "Yes, it's displayed on both doors in compliance."
+  },
+  {
+    "officer": "How do you secure a load of loose materials?",
+    "driver": "With tarps, netting, and additional tie-downs if needed."
+  },
+  {
+    "officer": "Have you done a walk-around inspection today?",
+    "driver": "Yes, I did a full walk-around before starting my shift."
+  },
+  {
+    "officer": "Do you know how to handle a tire blowout?",
+    "driver": "Yes, keep steady control and slow down gradually."
+  },
+  {
+    "officer": "How do you respond if your brakes start overheating?",
+    "driver": "I pull over safely and allow them to cool down before proceeding."
+  },
+  {
+    "officer": "Do you know how to adjust your air brakes?",
+    "driver": "Yes, but I let certified mechanics handle adjustments for safety."
+  },
+  {
+    "officer": "Do you maintain a daily inspection checklist?",
+    "driver": "Yes, it's part of my routine log entries."
+  },
+  {
+    "officer": "Have you inspected the undercarriage today?",
+    "driver": "Yes, I checked for leaks or loose parts during my pre-trip."
+  },
+  {
+    "officer": "Is your fuel cap secure and not leaking?",
+    "driver": "Yes, it's sealed tight and checked regularly."
+  },
+  {
+    "officer": "Do you carry a first aid kit?",
+    "driver": "Yes, it's stored behind my seat and fully stocked."
+  },
+  {
+    "officer": "Can you tell me your trailer axle weight?",
+    "driver": "Yes, it's listed on my scale ticket from this morning."
+  },
+  {
+    "officer": "How do you handle merging in heavy traffic?",
+    "driver": "I maintain safe following distance and signal early."
+  },
+  {
+    "officer": "Do you use a trip planning system?",
+    "driver": "Yes, I use a GPS and written route plan before each trip."
+  },
+  {
+    "officer": "Do you have reflective vests or safety gear?",
+    "driver": "Yes, I wear a high-vis vest when outside the cab."
+  },
+  {
+    "officer": "Have you done a tug test today?",
+    "driver": "Yes, I performed a tug test to verify trailer connection."
+  },
+  {
+    "officer": "What do you do in case of a cargo shift?",
+    "driver": "I stop immediately and secure the load before continuing."
+  },
+  {
+    "officer": "How do you check air leak rate on a truck?",
+    "driver": "By performing a leak-down test with brakes applied and released."
+  },
+  {
+    "officer": "Can you name three key items in your roadside emergency kit?",
+    "driver": "Reflective triangles, flashlight, and basic tools."
+  },
+  {
+    "officer": "What do you do when driving through high wind areas?",
+    "driver": "I slow down and grip the wheel firmly, especially if empty."
+  },
+  {
+    "officer": "Do you understand bridge clearance requirements?",
+    "driver": "Yes, I check all bridge heights on my route beforehand."
+  },
+  {
+    "officer": "When was your last tire rotation or replacement?",
+    "driver": "Tires were rotated at the last service two weeks ago."
+  },
+  {
+    "officer": "Are you required to carry chain-up gear in winter?",
+    "driver": "Yes, depending on the state laws and weather conditions."
+  },
+  {
+    "officer": "What is your company's DOT safety rating?",
+    "driver": "We're rated 'Satisfactory' by FMCSA."
+  },
+  {
+    "officer": "Do you review your logbook for errors before submission?",
+    "driver": "Yes, I always double-check my entries."
+  },
+  {
+    "officer": "Do you keep tools for minor repairs onboard?",
+    "driver": "Yes, for basic adjustments like mirrors or panels."
+  },
+  {
+    "officer": "Do you have a specific fuel economy goal?",
+    "driver": "Yes, I aim to stay above 6.5 mpg on highways."
+  },
+  {
+    "officer": "What's your typical driving shift duration?",
+    "driver": "Usually 8 to 9 hours with regular breaks."
+  },
+  {
+    "officer": "Do you track your vehicle maintenance digitally?",
+    "driver": "Yes, we use an app that logs all service records."
+  },
+  {
+    "officer": "Have you ever transported oversize loads?",
+    "driver": "Yes, I've done that with proper permits and escorts."
+  },
+  {
+    "officer": "How do you handle poor visibility on the road?",
+    "driver": "Slow down, use low beams, and increase following distance."
+  },
+  {
+    "officer": "Do you ever run empty return trips?",
+    "driver": "Sometimes, depending on dispatch and location."
+  },
+  {
+    "officer": "Do you record personal conveyance time?",
+    "driver": "Yes, and I ensure it complies with FMCSA rules."
+  },
+  {
+    "officer": "Have you ever failed to secure a load properly?",
+    "driver": "No, I always follow load securement procedures."
+  },
+  {
+    "officer": "What's your emergency procedure for accidents?",
+    "driver": "First, I ensure safety, then report to dispatch and authorities."
+  },
+  {
+    "officer": "Do you use any fuel card or tracking program?",
+    "driver": "Yes, we use a company-issued fuel card with tracking."
+  },
+  {
+    "officer": "Do you know how to use your emergency brakes?",
+    "driver": "Yes, they're engaged when parked and in case of air loss."
+  },
+  {
+    "officer": "What do you do if your trailer lights stop working?",
+    "driver": "I pull over safely and check the fuse, wiring, or call for repair."
+  },
+  {
+    "officer": "Can you identify your truck's VIN number?",
+    "driver": "Yes, it's located on the dashboard and inside the door frame."
+  },
+  {
+    "officer": "What should you do during a jackknife situation?",
+    "driver": "Ease off the brakes and steer gently to regain control."
+  },
+  {
+    "officer": "Is your cargo temperature-controlled?",
+    "driver": "Yes, I'm using a reefer unit set to 34°F for frozen goods."
+  },
+  {
+    "officer": "When do you perform post-trip inspections?",
+    "driver": "At the end of every shift or delivery run."
+  },
+  {
+    "officer": "Are you aware of your trailer's swing radius?",
+    "driver": "Yes, I allow extra space when turning corners."
+  },
+  {
+    "officer": "Have you had your CDL endorsement for tankers?",
+    "driver": "Yes, I obtained the endorsement last year."
+  },
+  {
+    "officer": "Do you know how to read a weigh ticket?",
+    "driver": "Yes, I check axle weights and gross vehicle weight."
+  },
+  {
+    "officer": "Have you reviewed today's weather conditions?",
+    "driver": "Yes, I checked for rain and crosswind alerts."
+  },
+  {
+    "officer": "How do you respond if your trailer skids?",
+    "driver": "I steer in the direction of the skid and avoid braking hard."
+  },
+  {
+    "officer": "What's your tire inflation policy?",
+    "driver": "I check pressure daily and inflate to manufacturer specs."
+  },
+  {
+    "officer": "Do you conduct en route inspections?",
+    "driver": "Yes, every time I stop or after 150 miles."
+  },
+  {
+    "officer": "Do you use blind spot mirrors?",
+    "driver": "Yes, they're adjusted for both sides to reduce blind spots."
+  },
+  {
+    "officer": "Can you explain proper lane discipline for trucks?",
+    "driver": "Stay in the right lane unless overtaking or as posted."
+  },
+  {
+    "officer": "Do you monitor your DEF (Diesel Exhaust Fluid) level?",
+    "driver": "Yes, I refill as needed and watch for alerts on the dash."
+  },
+  {
+    "officer": "What steps do you take before backing up?",
+    "driver": "I walk the area, use flashers, and back slowly with caution."
+  },
+  {
+    "officer": "Do you inspect your air compressor daily?",
+    "driver": "Yes, it's part of my pre-trip air brake system check."
+  },
+  {
+    "officer": "What's the rule for following distance?",
+    "driver": "One second per 10 feet of vehicle length, plus more in bad weather."
+  },
+  {
+    "officer": "What's your carrier's contact info in case of emergency?",
+    "driver": "Yes, I have dispatch and safety team numbers in my phone."
+  },
+  {
+    "officer": "Do you use a dash cam while driving?",
+    "driver": "Yes, it's for safety and evidence in case of incidents."
+  },
+  {
+    "officer": "Have you reviewed your CSA score recently?",
+    "driver": "Yes, I checked last month and everything is clear."
+  },
+  {
+    "officer": "Do you ever drive under heavy rain or fog?",
+    "driver": "Yes, but I reduce speed and increase spacing immediately."
+  },
+  {
+    "officer": "How do you prevent rollovers on curves?",
+    "driver": "I slow down and stay below posted ramp speeds."
+  },
+  {
+    "officer": "What's your plan if you miss an off-ramp?",
+    "driver": "I continue to the next exit and reroute safely."
+  },
+  {
+    "officer": "Do you carry extra fuses and bulbs?",
+    "driver": "Yes, they're in my spare parts kit."
+  },
+  {
+    "officer": "Do you carry a printed copy of your route?",
+    "driver": "Yes, I have it as backup in case GPS fails."
+  },
+  {
+    "officer": "Do you use cruise control in bad weather?",
+    "driver": "No, I turn it off to maintain full control."
+  },
+  {
+    "officer": "Do you know the legal alcohol limit for CDL holders?",
+    "driver": "Yes, it's 0.04%, and zero tolerance while on duty."
+  },
+  {
+    "officer": "Are you trained to respond to hazmat spills?",
+    "driver": "Yes, I completed the required hazmat training."
+  },
+  {
+    "officer": "When do you log sleeper berth time?",
+    "driver": "Only when I'm resting in the cab's designated sleeper area."
+  },
+  {
+    "officer": "Do you carry a tire chain kit?",
+    "driver": "Yes, especially when crossing mountain passes in winter."
+  },
+  {
+    "officer": "Do you know your air brake cut-in and cut-out pressures?",
+    "driver": "Yes, cut-in around 85 psi and cut-out near 130 psi."
+  },
+  {
+    "officer": "Have you checked your trailer kingpin lock?",
+    "driver": "Yes, it's engaged and inspected before departure."
+  },
+  {
+    "officer": "Do you avoid tailgating even at low speeds?",
+    "driver": "Absolutely, I keep safe distance regardless of speed."
+  },
+  {
+    "officer": "How do you handle fatigue while driving?",
+    "driver": "I rest or pull over immediately if I feel drowsy."
+  },
+  {
+    "officer": "Is your seatbelt functioning properly?",
+    "driver": "Yes, I check it every morning before driving."
+  },
+  {
+    "officer": "Do you log fueling time in your ELD?",
+    "driver": "Yes, it's logged as On Duty, Not Driving."
+  },
+  {
+    "officer": "Do you have a backup GPS or map in case of failure?",
+    "driver": "Yes, I carry a Rand McNally atlas and backup app."
+  }
+]
