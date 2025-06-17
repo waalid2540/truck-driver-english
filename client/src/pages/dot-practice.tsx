@@ -20,7 +20,8 @@ declare global {
 export default function DotPractice() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [userResponse, setUserResponse] = useState<string>("");
+  const [isQuestionAsked, setIsQuestionAsked] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [sessionId, setSessionId] = useState<number | null>(null);
