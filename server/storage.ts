@@ -4,7 +4,7 @@ import {
   DotQuestion, InsertDotQuestion,
   PracticeSession, InsertPracticeSession,
   ChatMessage, InsertChatMessage 
-} from "@/shared/schema";
+} from "../shared/schema";
 
 export interface IStorage {
   // User methods
@@ -55,13 +55,14 @@ export class MemStorage implements IStorage {
     const defaultUser: User = {
       id: 1,
       name: "John Driver",
-      email: "john@example.com",
       experienceLevel: "intermediate",
-      preferredLanguage: "en",
-      currentStreak: 5,
-      totalPracticeTime: 120,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      practiceStreak: 5,
+      totalSessions: 12,
+      dailyReminders: true,
+      voicePractice: true,
+      sessionDuration: 15,
+      darkMode: true,
+      createdAt: new Date()
     };
     this.users.set(1, defaultUser);
     this.currentUserId = 2;
@@ -114,7 +115,7 @@ export class MemStorage implements IStorage {
 
     categories.forEach((category, index) => {
       const id = index + 1;
-      this.dotCategories.set(id, { ...category, id, questionsCount: category.questionsCount || 0 });
+      this.dotCategories.set(id, { ...category, id, questionsCount: category.questionsCount ?? 0 });
     });
     this.currentCategoryId = 7;
 
@@ -278,10 +279,7 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id, 
-      createdAt: new Date(), 
-      updatedAt: new Date(),
-      currentStreak: insertUser.currentStreak || 0,
-      totalPracticeTime: insertUser.totalPracticeTime || 0
+      createdAt: new Date()
     };
     this.users.set(id, user);
     return user;
@@ -291,7 +289,7 @@ export class MemStorage implements IStorage {
     const user = this.users.get(id);
     if (!user) return undefined;
     
-    const updatedUser = { ...user, ...updates, updatedAt: new Date() };
+    const updatedUser = { ...user, ...updates };
     this.users.set(id, updatedUser);
     return updatedUser;
   }

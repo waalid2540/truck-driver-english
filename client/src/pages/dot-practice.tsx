@@ -117,41 +117,23 @@ export default function DotPractice() {
     }
   };
 
-  // Handle voice commands
+  // Handle voice commands for conversational practice
   const handleVoiceCommand = (command: string) => {
     const currentQuestion = questions?.[currentQuestionIndex];
     if (!currentQuestion) return;
 
-    // Convert options to lowercase for matching
-    const optionMatches = (currentQuestion.options as string[]).map((option, index) => ({
-      option: option.toLowerCase(),
-      index,
-      originalOption: option
-    }));
-
-    // Check for direct option matches
-    for (const match of optionMatches) {
-      if (command.includes(match.option) || 
-          command.includes(`option ${match.index + 1}`) ||
-          command.includes(`choice ${match.index + 1}`) ||
-          command.includes(`answer ${match.index + 1}`)) {
-        handleAnswerSelect(match.originalOption);
-        return;
-      }
-    }
-
-    // Check for letter choices (A, B, C, D)
-    const letterMap = ['a', 'b', 'c', 'd'];
-    for (let i = 0; i < letterMap.length && i < optionMatches.length; i++) {
-      if (command.includes(letterMap[i]) || command.includes(`letter ${letterMap[i]}`)) {
-        handleAnswerSelect(optionMatches[i].originalOption);
-        return;
-      }
-    }
+    // Store the user's voice response
+    setUserResponse(command);
+    
+    // Stop listening while processing
+    stopListening();
+    
+    // Provide feedback on the response
+    handleDriverResponse(command);
 
     // Navigation commands
     if (command.includes('next') || command.includes('continue')) {
-      if (selectedAnswer && !showResult) {
+      if (userResponse && !showResult) {
         handleNextQuestion();
       }
     } else if (command.includes('repeat') || command.includes('again')) {
