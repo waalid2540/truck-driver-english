@@ -182,13 +182,6 @@ export default function DotPractice() {
     speak(fullText);
   };
 
-  // Auto-read question when it changes
-  useEffect(() => {
-    if (selectedCategory && questions && isAudioEnabled && !showResult) {
-      setTimeout(() => readCurrentQuestion(), 500);
-    }
-  }, [currentQuestionIndex, selectedCategory, questions, isAudioEnabled, showResult]);
-
   const { data: categories } = useQuery({
     queryKey: ["/api/dot-categories"],
     queryFn: api.getDotCategories,
@@ -199,6 +192,13 @@ export default function DotPractice() {
     queryFn: () => api.getDotQuestions(selectedCategory!),
     enabled: !!selectedCategory,
   });
+
+  // Auto-read question when it changes
+  useEffect(() => {
+    if (selectedCategory && questions && isAudioEnabled && !showResult) {
+      setTimeout(() => readCurrentQuestion(), 500);
+    }
+  }, [currentQuestionIndex, selectedCategory, questions, isAudioEnabled, showResult, readCurrentQuestion]);
 
   const createSessionMutation = useMutation({
     mutationFn: api.createPracticeSession,
