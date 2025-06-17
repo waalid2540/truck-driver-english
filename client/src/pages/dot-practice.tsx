@@ -73,7 +73,7 @@ export default function DotPractice() {
       
       synthRef.current = window.speechSynthesis;
       
-      // Mobile volume optimization - request audio context activation
+      // Mobile volume optimization - request audio context activation with gain boost
       if (synthRef.current && 'AudioContext' in window) {
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         if (audioContext.state === 'suspended') {
@@ -81,6 +81,9 @@ export default function DotPractice() {
             audioContext.resume();
           }, { once: true });
         }
+        
+        // Store audio context for volume boosting
+        (window as any).audioContext = audioContext;
       }
     }
   }, [toast]);
@@ -172,6 +175,23 @@ export default function DotPractice() {
       const audio = new Audio(audioUrl);
       audio.volume = 1.0; // Maximum volume for officer voice
       
+      // Mobile volume boost using Web Audio API
+      if ('AudioContext' in window && (window as any).audioContext) {
+        try {
+          const audioContext = (window as any).audioContext;
+          const source = audioContext.createMediaElementSource(audio);
+          const gainNode = audioContext.createGain();
+          
+          // Boost volume by 300% for mobile devices
+          gainNode.gain.value = 3.0;
+          
+          source.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+        } catch (error) {
+          console.log('Web Audio API boost not available, using standard volume');
+        }
+      }
+      
       audio.onended = () => {
         setIsSpeaking(false);
         // Auto-start listening after officer speaks
@@ -237,6 +257,23 @@ export default function DotPractice() {
 
       const audio = new Audio(audioUrl);
       audio.volume = 1.0; // Maximum volume for driver voice
+      
+      // Mobile volume boost using Web Audio API
+      if ('AudioContext' in window && (window as any).audioContext) {
+        try {
+          const audioContext = (window as any).audioContext;
+          const source = audioContext.createMediaElementSource(audio);
+          const gainNode = audioContext.createGain();
+          
+          // Boost volume by 300% for mobile devices
+          gainNode.gain.value = 3.0;
+          
+          source.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+        } catch (error) {
+          console.log('Web Audio API boost not available, using standard volume');
+        }
+      }
       
       audio.onended = () => {
         setIsSpeaking(false);
@@ -321,7 +358,13 @@ export default function DotPractice() {
       completed: false,
     });
 
-    // Removed introduction voice to avoid interference with officer questions
+    // Force unlock audio on mobile devices with user interaction
+    if ('AudioContext' in window && (window as any).audioContext) {
+      const audioContext = (window as any).audioContext;
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
   };
 
   const handleShowAnswer = () => {
