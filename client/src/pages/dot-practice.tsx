@@ -129,7 +129,7 @@ export default function DotPractice() {
     stopListening();
     
     // Provide feedback on the response
-    handleDriverResponse(command);
+    evaluateDriverResponse(command);
 
     // Navigation commands
     if (command.includes('next') || command.includes('continue')) {
@@ -141,28 +141,76 @@ export default function DotPractice() {
     } else if (command.includes('back') || command.includes('previous')) {
       if (currentQuestionIndex > 0) {
         setCurrentQuestionIndex(prev => prev - 1);
-        setSelectedAnswer(null);
+        setUserResponse("");
         setShowResult(false);
+        setIsQuestionAsked(false);
       }
     } else if (command.includes('home') || command.includes('menu')) {
       resetPractice();
     }
   };
 
-  // Read the current question and options
+  // Read the current officer question for conversation practice
   const readCurrentQuestion = () => {
     if (!questions || !isAudioEnabled) return;
     
     const currentQuestion = questions[currentQuestionIndex];
     if (!currentQuestion) return;
 
-    const questionText = `Question ${currentQuestionIndex + 1} of ${questions.length}. ${currentQuestion.question}`;
-    const optionsText = (currentQuestion.options as string[])
-      .map((option, index) => `Option ${index + 1}: ${option}`)
-      .join('. ');
+    const questionText = `Officer asks: ${currentQuestion.question}`;
+    speak(questionText);
+    setIsQuestionAsked(true);
     
-    const fullText = `${questionText}. Your options are: ${optionsText}. Please say your answer, option number, or letter A through D.`;
-    speak(fullText);
+    // Start listening for driver's response after officer asks
+    setTimeout(() => {
+      if (isAudioEnabled) {
+        startListening();
+      }
+    }, 2000);
+  };
+
+  // Evaluate driver's voice response to officer's question
+  const evaluateDriverResponse = async (response: string) => {
+    const currentQuestion = questions?.[currentQuestionIndex];
+    if (!currentQuestion) return;
+
+    // Check if response contains key elements of the correct answer
+    const correctAnswer = currentQuestion.correctAnswer.toLowerCase();
+    const responseWords = response.toLowerCase().split(' ');
+    const correctWords = correctAnswer.split(' ');
+    
+    // Simple scoring based on matching key words and phrases
+    let matchScore = 0;
+    correctWords.forEach(word => {
+      if (word.length > 3 && responseWords.some(rWord => rWord.includes(word) || word.includes(rWord))) {
+        matchScore++;
+      }
+    });
+
+    const scorePercentage = (matchScore / correctWords.length) * 100;
+    const isGoodResponse = scorePercentage > 30; // 30% threshold for basic professional response
+
+    if (isGoodResponse) {
+      setScore(prev => prev + 1);
+      speak(`Good response. ${currentQuestion.explanation}`);
+      toast({
+        title: "Professional Response",
+        description: "That was a good professional answer to the officer.",
+      });
+    } else {
+      speak(`That response could be improved. Here's a better approach: ${currentQuestion.correctAnswer}. ${currentQuestion.explanation}`);
+      toast({
+        title: "Practice More",
+        description: "Try to be more specific and professional in your response.",
+        variant: "destructive"
+      });
+    }
+
+    setShowResult(true);
+    setTimeout(() => {
+      setShowResult(false);
+      setIsQuestionAsked(false);
+    }, 4000);
   };
 
   const { data: categories } = useQuery({
@@ -207,7 +255,8 @@ export default function DotPractice() {
     setCurrentQuestionIndex(0);
     setScore(0);
     setShowResult(false);
-    setSelectedAnswer(null);
+    setUserResponse("");
+    setIsQuestionAsked(false);
 
     // Create practice session
     createSessionMutation.mutate({
@@ -227,69 +276,49 @@ export default function DotPractice() {
     }
   };
 
-  const handleAnswerSelect = (answer: string) => {
-    setSelectedAnswer(answer);
-  };
-
   const handleNextQuestion = () => {
-    if (!questions || !selectedAnswer) return;
+    if (!questions) return;
 
-    const currentQuestion = questions[currentQuestionIndex];
-    const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
-    
-    if (isCorrect) {
-      setScore(prev => prev + 1);
-    }
-
-    setShowResult(true);
-
-    // Provide audio feedback
-    if (isAudioEnabled) {
-      const feedback = isCorrect ? "Correct!" : "Incorrect.";
-      const explanation = currentQuestion.explanation ? ` ${currentQuestion.explanation}` : "";
-      speak(`${feedback}${explanation}`);
-    }
-    
-    setTimeout(() => {
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(prev => prev + 1);
-        setSelectedAnswer(null);
-        setShowResult(false);
-        
-        // Read next question automatically
-        if (isAudioEnabled) {
-          setTimeout(() => readCurrentQuestion(), 1000);
-        }
-      } else {
-        // Practice complete
-        const finalScore = Math.round(((score + (isCorrect ? 1 : 0)) / questions.length) * 100);
-        if (sessionId) {
-          updateSessionMutation.mutate({
-            id: sessionId,
-            updates: {
-              duration: 10, // Approximate duration
-              score: finalScore,
-              completed: true,
-            },
-          });
-        }
-        
-        if (isAudioEnabled) {
-          speak(`Practice session complete! You scored ${finalScore} percent. Great job!`);
-        }
-        
-        setTimeout(() => resetPractice(), 3000);
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setUserResponse("");
+      setShowResult(false);
+      setIsQuestionAsked(false);
+      
+      // Read next question automatically
+      if (isAudioEnabled) {
+        setTimeout(() => readCurrentQuestion(), 1000);
       }
-    }, 3000);
+    } else {
+      // Practice complete
+      const finalScore = Math.round((score / questions.length) * 100);
+      if (sessionId) {
+        updateSessionMutation.mutate({
+          id: sessionId,
+          updates: {
+            duration: 10, // Approximate duration
+            score: finalScore,
+            completed: true,
+          },
+        });
+      }
+      
+      if (isAudioEnabled) {
+        speak(`Practice session complete! You scored ${finalScore} percent. Great job!`);
+      }
+      
+      setTimeout(() => resetPractice(), 3000);
+    }
   };
 
   const resetPractice = () => {
     setSelectedCategory(null);
     setCurrentQuestionIndex(0);
-    setSelectedAnswer(null);
+    setUserResponse("");
     setShowResult(false);
     setScore(0);
     setSessionId(null);
+    setIsQuestionAsked(false);
     stopListening();
   };
 

@@ -265,7 +265,7 @@ export class MemStorage implements IStorage {
 
     questions.forEach((question, index) => {
       const id = index + 1;
-      this.dotQuestions.set(id, { ...question, id, explanation: question.explanation || null });
+      this.dotQuestions.set(id, { ...question, id, explanation: question.explanation ?? null });
     });
     this.currentQuestionId = questions.length + 1;
   }
