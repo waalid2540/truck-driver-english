@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Shield, FileText, TrafficCone, Check, X } from "lucide-react";
+import { ArrowLeft, Shield, FileText, TrafficCone, Check, X, Volume2, VolumeX, Mic, MicOff, Repeat, PlayCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +16,163 @@ export default function DotPractice() {
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [sessionId, setSessionId] = useState<number | null>(null);
+  
+  // Audio and hands-free features
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isListening, setIsListening] = useState(false);
+  const [autoRepeat, setAutoRepeat] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+  
   const { toast } = useToast();
+
+  // Initialize speech recognition and synthesis
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-US';
+        
+        recognitionRef.current.onresult = (event) => {
+          const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+          console.log('Speech recognized:', transcript);
+          handleVoiceCommand(transcript);
+        };
+        
+        recognitionRef.current.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+        };
+        
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+          if (autoRepeat && isAudioEnabled && questions && selectedCategory) {
+            // Auto-restart listening after speech ends
+            setTimeout(() => startListening(), 1000);
+          }
+        };
+      }
+      
+      synthRef.current = window.speechSynthesis;
+    }
+  }, [autoRepeat, isAudioEnabled, questions, selectedCategory]);
+
+  // Speech synthesis function
+  const speak = async (text: string) => {
+    if (!isAudioEnabled || !synthRef.current) return;
+    
+    // Stop any current speech
+    synthRef.current.cancel();
+    
+    setIsSpeaking(true);
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+    
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+    };
+    
+    synthRef.current.speak(utterance);
+  };
+
+  // Start voice recognition
+  const startListening = () => {
+    if (!recognitionRef.current || isListening) return;
+    
+    try {
+      setIsListening(true);
+      recognitionRef.current.start();
+      console.log('Speech recognition started');
+    } catch (error) {
+      console.error('Error starting speech recognition:', error);
+      setIsListening(false);
+    }
+  };
+
+  // Stop voice recognition
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  // Handle voice commands
+  const handleVoiceCommand = (command: string) => {
+    const currentQuestion = questions?.[currentQuestionIndex];
+    if (!currentQuestion) return;
+
+    // Convert options to lowercase for matching
+    const optionMatches = (currentQuestion.options as string[]).map((option, index) => ({
+      option: option.toLowerCase(),
+      index,
+      originalOption: option
+    }));
+
+    // Check for direct option matches
+    for (const match of optionMatches) {
+      if (command.includes(match.option) || 
+          command.includes(`option ${match.index + 1}`) ||
+          command.includes(`choice ${match.index + 1}`) ||
+          command.includes(`answer ${match.index + 1}`)) {
+        handleAnswerSelect(match.originalOption);
+        return;
+      }
+    }
+
+    // Check for letter choices (A, B, C, D)
+    const letterMap = ['a', 'b', 'c', 'd'];
+    for (let i = 0; i < letterMap.length && i < optionMatches.length; i++) {
+      if (command.includes(letterMap[i]) || command.includes(`letter ${letterMap[i]}`)) {
+        handleAnswerSelect(optionMatches[i].originalOption);
+        return;
+      }
+    }
+
+    // Navigation commands
+    if (command.includes('next') || command.includes('continue')) {
+      if (selectedAnswer && !showResult) {
+        handleNextQuestion();
+      }
+    } else if (command.includes('repeat') || command.includes('again')) {
+      readCurrentQuestion();
+    } else if (command.includes('back') || command.includes('previous')) {
+      if (currentQuestionIndex > 0) {
+        setCurrentQuestionIndex(prev => prev - 1);
+        setSelectedAnswer(null);
+        setShowResult(false);
+      }
+    } else if (command.includes('home') || command.includes('menu')) {
+      resetPractice();
+    }
+  };
+
+  // Read the current question and options
+  const readCurrentQuestion = () => {
+    if (!questions || !isAudioEnabled) return;
+    
+    const currentQuestion = questions[currentQuestionIndex];
+    if (!currentQuestion) return;
+
+    const questionText = `Question ${currentQuestionIndex + 1} of ${questions.length}. ${currentQuestion.question}`;
+    const optionsText = (currentQuestion.options as string[])
+      .map((option, index) => `Option ${index + 1}: ${option}`)
+      .join('. ');
+    
+    const fullText = `${questionText}. Your options are: ${optionsText}. Please say your answer or say "repeat" to hear the question again.`;
+    speak(fullText);
+  };
 
   const { data: categories } = useQuery({
     queryKey: ["/api/dot-categories"],
