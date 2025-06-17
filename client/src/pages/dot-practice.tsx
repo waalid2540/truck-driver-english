@@ -178,9 +178,16 @@ export default function DotPractice() {
       .map((option, index) => `Option ${index + 1}: ${option}`)
       .join('. ');
     
-    const fullText = `${questionText}. Your options are: ${optionsText}. Please say your answer or say "repeat" to hear the question again.`;
+    const fullText = `${questionText}. Your options are: ${optionsText}. Please say your answer, option number, or letter A through D.`;
     speak(fullText);
   };
+
+  // Auto-read question when it changes
+  useEffect(() => {
+    if (selectedCategory && questions && isAudioEnabled && !showResult) {
+      setTimeout(() => readCurrentQuestion(), 500);
+    }
+  }, [currentQuestionIndex, selectedCategory, questions, isAudioEnabled, showResult]);
 
   const { data: categories } = useQuery({
     queryKey: ["/api/dot-categories"],
@@ -427,7 +434,28 @@ export default function DotPractice() {
           {/* Question */}
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">{currentQuestion.question}</h3>
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900 flex-1">{currentQuestion.question}</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={readCurrentQuestion}
+                  className="ml-2 p-1"
+                  title="Read question aloud"
+                  disabled={isSpeaking}
+                >
+                  <Volume2 className={`h-4 w-4 ${isSpeaking ? 'text-truck-blue' : 'text-gray-500'}`} />
+                </Button>
+              </div>
+              
+              {/* Voice Instructions */}
+              {isAudioEnabled && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-700">
+                    <span className="font-medium">Voice Commands:</span> Say "Option 1", "Option 2", "A", "B", "C", "D", or speak the full answer
+                  </p>
+                </div>
+              )}
               
               <div className="space-y-3">
                 {(currentQuestion.options as string[]).map((option, index) => {
@@ -435,6 +463,7 @@ export default function DotPractice() {
                   const isCorrect = option === currentQuestion.correctAnswer;
                   const isIncorrect = showResult && isSelected && !isCorrect;
                   const shouldShowCorrect = showResult && isCorrect;
+                  const letter = String.fromCharCode(65 + index); // A, B, C, D
 
                   return (
                     <button
@@ -452,7 +481,10 @@ export default function DotPractice() {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span>{option}</span>
+                        <div className="flex items-center space-x-3">
+                          <span className="font-medium text-gray-500 text-sm min-w-[20px]">{letter}.</span>
+                          <span className="flex-1">{option}</span>
+                        </div>
                         {showResult && shouldShowCorrect && (
                           <Check className="h-5 w-5 text-green-600" />
                         )}
@@ -506,7 +538,7 @@ export default function DotPractice() {
       <div className="p-4 space-y-4">
         {/* Practice Categories */}
         <div className="space-y-3">
-          {categories?.map((category) => {
+          {categories?.map((category: any) => {
             const Icon = getCategoryIcon(category.name);
             const colorClasses = getCategoryColor(category.color);
             
