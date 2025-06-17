@@ -55,11 +55,11 @@ export async function generateSpeech(text: string, voice: 'officer' | 'driver' =
     };
 
     const response = await openai.audio.speech.create({
-      model: "tts-1", // Faster model for reduced latency while maintaining quality
+      model: "tts-1-hd", // Higher quality model for better mobile audio
       voice: voiceMap[voice],
       input: text,
       response_format: "mp3",
-      speed: 0.95, // Slightly faster speed to reduce overall duration
+      speed: 0.85, // Slower for better clarity on mobile devices
     });
     
     const buffer = Buffer.from(await response.arrayBuffer());

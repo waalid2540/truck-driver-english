@@ -144,173 +144,92 @@ export default function DotPractice() {
     if (!questions || !isAudioEnabled || !questions[currentQuestionIndex]) return;
     
     const currentQuestion = questions[currentQuestionIndex];
-    const cacheKey = `officer_${currentQuestion.id}`;
     setIsSpeaking(true);
 
-    try {
-      let audioUrl = audioCache.current.get(cacheKey);
+    // Use browser synthesis for better mobile compatibility and volume
+    if (synthRef.current) {
+      synthRef.current.cancel(); // Stop any current speech
       
-      if (!audioUrl) {
-        // Generate and cache audio
-        const response = await fetch('/api/speak-dot', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: currentQuestion.question, // Removed prefix for faster generation
-            voice: 'officer'
-          }),
-        });
-
-        if (response.ok) {
-          const audioBlob = await response.blob();
-          audioUrl = URL.createObjectURL(audioBlob);
-          audioCache.current.set(cacheKey, audioUrl);
-        } else {
-          throw new Error('Failed to generate professional voice');
-        }
-      }
-
-      const audio = new Audio(audioUrl);
-      audio.volume = 1.0; // Maximum volume for officer voice
+      const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
       
-      // Mobile volume boost using Web Audio API
-      if ('AudioContext' in window && (window as any).audioContext) {
-        try {
-          const audioContext = (window as any).audioContext;
-          const source = audioContext.createMediaElementSource(audio);
-          const gainNode = audioContext.createGain();
-          
-          // Boost volume by 300% for mobile devices
-          gainNode.gain.value = 3.0;
-          
-          source.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-        } catch (error) {
-          console.log('Web Audio API boost not available, using standard volume');
-        }
+      // Mobile-optimized settings for maximum clarity and volume
+      utterance.rate = 0.7;
+      utterance.pitch = 0.8;
+      utterance.volume = 1.0;
+      
+      // Find the best available voice for mobile
+      const voices = synthRef.current.getVoices();
+      const bestVoice = voices.find(voice => 
+        voice.lang.startsWith('en') && 
+        (voice.name.includes('Male') || voice.name.includes('Google') || voice.name.includes('Microsoft'))
+      ) || voices.find(voice => voice.lang.startsWith('en'));
+      
+      if (bestVoice) {
+        utterance.voice = bestVoice;
       }
       
-      audio.onended = () => {
+      utterance.onend = () => {
         setIsSpeaking(false);
         // Auto-start listening after officer speaks
         if (isAudioEnabled && !userResponse) {
-          setTimeout(() => startListening(), 500); // Reduced delay
+          setTimeout(() => startListening(), 500);
         }
       };
       
-      audio.onerror = () => {
+      utterance.onerror = () => {
         setIsSpeaking(false);
-        // Remove from cache if error
-        audioCache.current.delete(cacheKey);
-        if (audioUrl) URL.revokeObjectURL(audioUrl);
       };
       
-      await audio.play();
-    } catch (error) {
-      console.error('Professional voice error:', error);
+      synthRef.current.speak(utterance);
+    } else {
       setIsSpeaking(false);
-      
-      // Fallback to browser synthesis
-      if (synthRef.current) {
-        const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
-        utterance.rate = 0.8;
-        utterance.pitch = 0.9;
-        utterance.volume = 1.0; // Maximum volume
-        utterance.onend = () => setIsSpeaking(false);
-        synthRef.current.speak(utterance);
-      }
     }
   };
 
   const speakDriverResponse = async (text: string) => {
     if (!isAudioEnabled) return;
     
-    const cacheKey = `driver_${text.substring(0, 50)}`; // Cache key based on response text
     setIsSpeaking(true);
 
-    try {
-      let audioUrl = audioCache.current.get(cacheKey);
+    // Use browser synthesis for consistent mobile volume
+    if (synthRef.current) {
+      synthRef.current.cancel(); // Stop any current speech
       
-      if (!audioUrl) {
-        // Generate and cache driver response audio
-        const response = await fetch('/api/speak-dot', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: text, // Direct text without prefix for speed
-            voice: 'driver'
-          }),
-        });
-
-        if (response.ok) {
-          const audioBlob = await response.blob();
-          audioUrl = URL.createObjectURL(audioBlob);
-          audioCache.current.set(cacheKey, audioUrl);
-        } else {
-          throw new Error('Failed to generate professional driver voice');
-        }
-      }
-
-      const audio = new Audio(audioUrl);
-      audio.volume = 1.0; // Maximum volume for driver voice
+      const utterance = new SpeechSynthesisUtterance(text);
       
-      // Mobile volume boost using Web Audio API
-      if ('AudioContext' in window && (window as any).audioContext) {
-        try {
-          const audioContext = (window as any).audioContext;
-          const source = audioContext.createMediaElementSource(audio);
-          const gainNode = audioContext.createGain();
-          
-          // Boost volume by 300% for mobile devices
-          gainNode.gain.value = 3.0;
-          
-          source.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-        } catch (error) {
-          console.log('Web Audio API boost not available, using standard volume');
-        }
+      // Mobile-optimized settings for driver response
+      utterance.rate = 0.7;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      // Find a different voice for driver to distinguish from officer
+      const voices = synthRef.current.getVoices();
+      const driverVoice = voices.find(voice => 
+        voice.lang.startsWith('en') && 
+        (voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Karen'))
+      ) || voices.find(voice => voice.lang.startsWith('en') && voice.name !== utterance.voice?.name);
+      
+      if (driverVoice) {
+        utterance.voice = driverVoice;
       }
       
-      audio.onended = () => {
+      utterance.onend = () => {
         setIsSpeaking(false);
         // Auto-advance to next question after driver response is spoken
         if (autoPlay && questions) {
           setTimeout(() => {
             handleNextQuestion();
-          }, 500); // Further reduced delay
+          }, 500);
         }
       };
       
-      audio.onerror = () => {
+      utterance.onerror = () => {
         setIsSpeaking(false);
-        // Remove from cache if error
-        audioCache.current.delete(cacheKey);
-        if (audioUrl) URL.revokeObjectURL(audioUrl);
       };
       
-      await audio.play();
-    } catch (error) {
-      console.error('Professional driver voice error:', error);
+      synthRef.current.speak(utterance);
+    } else {
       setIsSpeaking(false);
-      
-      // Fallback to browser synthesis
-      if (synthRef.current) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.8;
-        utterance.pitch = 1.1;
-        utterance.volume = 1.0; // Maximum volume
-        utterance.onend = () => {
-          setIsSpeaking(false);
-          if (autoPlay && questions) {
-            setTimeout(() => handleNextQuestion(), 500);
-          }
-        };
-        synthRef.current.speak(utterance);
-      }
     }
   };
 
