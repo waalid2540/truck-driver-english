@@ -31,6 +31,7 @@ export default function DotPractice() {
   const [autoPlay, setAutoPlay] = useState(true);
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const audioCache = useRef<Map<string, string>>(new Map());
   
   const { toast } = useToast();
 
@@ -121,15 +122,16 @@ export default function DotPractice() {
     }
   }, [currentQuestionIndex, questions, isAudioEnabled, autoPlay, showAnswer, questionsLoading]);
 
-  // Auto-show answer after officer speaks and brief pause
+  // Auto-show answer after officer speaks and brief pause - reduced delay
   useEffect(() => {
     if (questions && questions.length > 0 && autoPlay && !showAnswer && !isSpeaking && !questionsLoading) {
       const timer = setTimeout(() => {
         setShowAnswer(true);
         if (isAudioEnabled && questions[currentQuestionIndex]) {
-          setTimeout(() => speakDriverResponse(questions[currentQuestionIndex].correctAnswer), 1000);
+          // Reduced delay for faster response
+          setTimeout(() => speakDriverResponse(questions[currentQuestionIndex].correctAnswer), 500);
         }
-      }, 5000); // 5 second delay after officer question
+      }, 2000); // Reduced from 5 seconds to 2 seconds
 
       return () => clearTimeout(timer);
     }
@@ -139,57 +141,60 @@ export default function DotPractice() {
     if (!questions || !isAudioEnabled || !questions[currentQuestionIndex]) return;
     
     const currentQuestion = questions[currentQuestionIndex];
+    const cacheKey = `officer_${currentQuestion.id}`;
     setIsSpeaking(true);
 
     try {
-      // Use professional AI voice for officer
-      const response = await fetch('/api/speak-dot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: `Officer asks: ${currentQuestion.question}`,
-          voice: 'officer'
-        }),
-      });
+      let audioUrl = audioCache.current.get(cacheKey);
+      
+      if (!audioUrl) {
+        // Generate and cache audio
+        const response = await fetch('/api/speak-dot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: currentQuestion.question, // Removed prefix for faster generation
+            voice: 'officer'
+          }),
+        });
 
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        
-        audio.onended = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-          // Auto-start listening after officer speaks
-          if (isAudioEnabled && !userResponse) {
-            setTimeout(() => startListening(), 1000);
-          }
-        };
-        
-        audio.onerror = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        await audio.play();
-      } else {
-        throw new Error('Failed to generate professional voice');
+        if (response.ok) {
+          const audioBlob = await response.blob();
+          audioUrl = URL.createObjectURL(audioBlob);
+          audioCache.current.set(cacheKey, audioUrl);
+        } else {
+          throw new Error('Failed to generate professional voice');
+        }
       }
+
+      const audio = new Audio(audioUrl);
+      
+      audio.onended = () => {
+        setIsSpeaking(false);
+        // Auto-start listening after officer speaks
+        if (isAudioEnabled && !userResponse) {
+          setTimeout(() => startListening(), 500); // Reduced delay
+        }
+      };
+      
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        // Remove from cache if error
+        audioCache.current.delete(cacheKey);
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+      };
+      
+      await audio.play();
     } catch (error) {
       console.error('Professional voice error:', error);
       setIsSpeaking(false);
-      toast({
-        title: "Voice Error",
-        description: "Using fallback voice system",
-        variant: "destructive"
-      });
       
       // Fallback to browser synthesis
       if (synthRef.current) {
-        const utterance = new SpeechSynthesisUtterance(`Officer asks: ${currentQuestion.question}`);
-        utterance.rate = 0.7;
+        const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
+        utterance.rate = 0.8;
         utterance.pitch = 0.9;
         utterance.volume = 1;
         utterance.onend = () => setIsSpeaking(false);
@@ -201,60 +206,68 @@ export default function DotPractice() {
   const speakDriverResponse = async (text: string) => {
     if (!isAudioEnabled) return;
     
+    const cacheKey = `driver_${text.substring(0, 50)}`; // Cache key based on response text
     setIsSpeaking(true);
 
     try {
-      // Use professional AI voice for driver response
-      const response = await fetch('/api/speak-dot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: `Professional response: ${text}`,
-          voice: 'driver'
-        }),
-      });
+      let audioUrl = audioCache.current.get(cacheKey);
+      
+      if (!audioUrl) {
+        // Generate and cache driver response audio
+        const response = await fetch('/api/speak-dot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: text, // Direct text without prefix for speed
+            voice: 'driver'
+          }),
+        });
 
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        
-        audio.onended = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-          // Auto-advance to next question after driver response is spoken
-          if (autoPlay && questions) {
-            setTimeout(() => {
-              handleNextQuestion();
-            }, 3000); // 3 second pause after driver response
-          }
-        };
-        
-        audio.onerror = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        await audio.play();
-      } else {
-        throw new Error('Failed to generate professional driver voice');
+        if (response.ok) {
+          const audioBlob = await response.blob();
+          audioUrl = URL.createObjectURL(audioBlob);
+          audioCache.current.set(cacheKey, audioUrl);
+        } else {
+          throw new Error('Failed to generate professional driver voice');
+        }
       }
+
+      const audio = new Audio(audioUrl);
+      
+      audio.onended = () => {
+        setIsSpeaking(false);
+        // Auto-advance to next question after driver response is spoken
+        if (autoPlay && questions) {
+          setTimeout(() => {
+            handleNextQuestion();
+          }, 500); // Further reduced delay
+        }
+      };
+      
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        // Remove from cache if error
+        audioCache.current.delete(cacheKey);
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+      };
+      
+      await audio.play();
     } catch (error) {
       console.error('Professional driver voice error:', error);
       setIsSpeaking(false);
       
       // Fallback to browser synthesis
       if (synthRef.current) {
-        const utterance = new SpeechSynthesisUtterance(`Professional response: ${text}`);
-        utterance.rate = 0.7;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.8;
         utterance.pitch = 1.1;
         utterance.volume = 1;
         utterance.onend = () => {
           setIsSpeaking(false);
           if (autoPlay && questions) {
-            setTimeout(() => handleNextQuestion(), 3000);
+            setTimeout(() => handleNextQuestion(), 500);
           }
         };
         synthRef.current.speak(utterance);
