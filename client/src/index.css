@@ -66,14 +66,43 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased;
     font-family: 'Roboto', sans-serif;
-    color: hsl(240, 10%, 3.9%); /* Ensure dark text on light background */
+    background-color: white !important;
+    color: #1f2937 !important; /* Force dark gray text */
   }
 
-  /* Ensure all text elements have proper contrast */
-  h1, h2, h3, h4, h5, h6, p, span, div {
-    color: inherit;
+  /* Force all text elements to be visible */
+  h1, h2, h3, h4, h5, h6, p, span, div, button, a, label {
+    color: #1f2937 !important;
+  }
+
+  /* Navigation buttons should be visible */
+  nav button, nav a, nav span {
+    color: #6b7280 !important;
+  }
+
+  nav button.text-truck-blue, nav a.text-truck-blue {
+    color: hsl(212, 90%, 48%) !important;
+  }
+
+  /* Override any white text that might be applied */
+  .text-white {
+    color: white !important;
+  }
+
+  /* Keep specific sections with white text */
+  header *, 
+  .bg-truck-blue *,
+  .bg-gradient-to-r *,
+  .bg-blue-600 * {
+    color: white !important;
+  }
+
+  /* Button text should follow button styles */
+  button.bg-truck-orange,
+  button.bg-truck-blue {
+    color: white !important;
   }
 }
 
