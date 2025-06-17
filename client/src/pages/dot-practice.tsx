@@ -122,16 +122,18 @@ export default function DotPractice() {
     }
   }, [currentQuestionIndex, questions, isAudioEnabled, autoPlay, showAnswer, questionsLoading]);
 
-  // Auto-show answer after officer speaks and brief pause - reduced delay
+  // Auto-show answer after officer speaks and brief pause - no driver voice
   useEffect(() => {
     if (questions && questions.length > 0 && autoPlay && !showAnswer && !isSpeaking && !questionsLoading) {
       const timer = setTimeout(() => {
         setShowAnswer(true);
-        if (isAudioEnabled && questions[currentQuestionIndex]) {
-          // Reduced delay for faster response
-          setTimeout(() => speakDriverResponse(questions[currentQuestionIndex].correctAnswer), 500);
+        // Removed driver voice - just show text and auto-advance
+        if (autoPlay && questions) {
+          setTimeout(() => {
+            handleNextQuestion();
+          }, 2000); // 2 seconds to read the response text
         }
-      }, 2000); // Reduced from 5 seconds to 2 seconds
+      }, 2000); // 2 seconds after officer question
 
       return () => clearTimeout(timer);
     }
@@ -324,11 +326,7 @@ export default function DotPractice() {
 
   const handleShowAnswer = () => {
     setShowAnswer(true);
-    
-    if (questions && isAudioEnabled && questions[currentQuestionIndex]) {
-      const currentQuestion = questions[currentQuestionIndex];
-      setTimeout(() => speakDriverResponse(currentQuestion.correctAnswer), 500);
-    }
+    // Removed driver voice - just show the professional response text
   };
 
   const handleNextQuestion = () => {
@@ -640,18 +638,8 @@ export default function DotPractice() {
                 {/* Professional Answer (when shown) */}
                 {showAnswer && (
                   <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center mb-2">
                       <h4 className="font-semibold text-yellow-800 dark:text-yellow-300">Professional Response:</h4>
-                      <Button
-                        onClick={() => speakDriverResponse(currentQuestion.correctAnswer)}
-                        disabled={isSpeaking}
-                        variant="ghost"
-                        size="sm"
-                        className="flex items-center space-x-1"
-                      >
-                        <Volume2 className="h-4 w-4" />
-                        <span className="text-xs">Listen</span>
-                      </Button>
                     </div>
                     <p className="text-gray-800 dark:text-gray-200 italic mb-2">"{currentQuestion.correctAnswer}"</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{currentQuestion.explanation}</p>
