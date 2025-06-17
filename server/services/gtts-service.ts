@@ -22,7 +22,7 @@ export async function generateGTTSSpeech(text: string, voice: 'officer' | 'drive
   try {
     const GTTSClass = await initGTTS();
     
-    // Create GTTS instance with optimized settings for mobile
+    // Create GTTS instance with male voice optimization for mobile
     const tts = new GTTSClass(text, 'en', {
       slow: false, // Normal speed for better comprehension
       host: 'https://translate.google.com',

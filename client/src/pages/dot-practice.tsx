@@ -193,13 +193,14 @@ export default function DotPractice() {
       
       const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
       utterance.rate = 0.7;
-      utterance.pitch = 0.8;
+      utterance.pitch = 0.6; // Lower pitch for deeper male voice
       utterance.volume = 1.0;
       
       const voices = synthRef.current.getVoices();
       const bestVoice = voices.find(voice => 
         voice.lang.startsWith('en') && 
-        (voice.name.includes('Male') || voice.name.includes('Google') || voice.name.includes('Microsoft'))
+        (voice.name.includes('Male') || voice.name.includes('Daniel') || voice.name.includes('Alex') || 
+         voice.name.includes('Tom') || voice.name.includes('Fred') || voice.name.includes('Google US English'))
       ) || voices.find(voice => voice.lang.startsWith('en'));
       
       if (bestVoice) {
@@ -277,13 +278,14 @@ export default function DotPractice() {
       
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.7;
-      utterance.pitch = 1.0;
+      utterance.pitch = 0.7; // Slightly higher than officer but still male
       utterance.volume = 1.0;
       
       const voices = synthRef.current.getVoices();
       const driverVoice = voices.find(voice => 
         voice.lang.startsWith('en') && 
-        (voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Karen'))
+        (voice.name.includes('Male') || voice.name.includes('David') || voice.name.includes('Michael') || 
+         voice.name.includes('John') || voice.name.includes('Mark') || voice.name.includes('Google US English'))
       ) || voices.find(voice => voice.lang.startsWith('en') && voice.name !== utterance.voice?.name);
       
       if (driverVoice) {
