@@ -104,12 +104,26 @@ export default function DotPractice() {
     },
   });
 
-  // Auto-speak officer question when it loads
+  // Auto-speak officer question when it loads, then auto-show answer
   useEffect(() => {
     if (questions && questions.length > 0 && isAudioEnabled && autoPlay && !showAnswer && !questionsLoading) {
       setTimeout(() => speakOfficerQuestion(), 1000);
     }
   }, [currentQuestionIndex, questions, isAudioEnabled, autoPlay, showAnswer, questionsLoading]);
+
+  // Auto-show answer after officer speaks and brief pause
+  useEffect(() => {
+    if (questions && questions.length > 0 && autoPlay && !showAnswer && !isSpeaking && !questionsLoading) {
+      const timer = setTimeout(() => {
+        setShowAnswer(true);
+        if (isAudioEnabled && questions[currentQuestionIndex]) {
+          setTimeout(() => speakDriverResponse(questions[currentQuestionIndex].correctAnswer), 1000);
+        }
+      }, 5000); // 5 second delay after officer question
+
+      return () => clearTimeout(timer);
+    }
+  }, [questions, autoPlay, showAnswer, isSpeaking, questionsLoading, currentQuestionIndex, isAudioEnabled]);
 
   const speakOfficerQuestion = () => {
     if (!questions || !isAudioEnabled || !questions[currentQuestionIndex]) return;
@@ -150,7 +164,15 @@ export default function DotPractice() {
     utterance.pitch = 1;
     utterance.volume = 1;
     
-    utterance.onend = () => setIsSpeaking(false);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      // Auto-advance to next question after driver response is spoken
+      if (autoPlay && questions) {
+        setTimeout(() => {
+          handleNextQuestion();
+        }, 3000); // 3 second pause after driver response
+      }
+    };
     utterance.onerror = () => setIsSpeaking(false);
     
     synthRef.current.speak(utterance);
