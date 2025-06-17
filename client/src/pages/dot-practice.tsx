@@ -341,6 +341,22 @@ export default function DotPractice() {
   };
 
   if (selectedCategory && questions) {
+    // Handle empty questions array
+    if (questions.length === 0) {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl mb-4">📝</div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">No Questions Available</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">This category is ready for custom prompts.</p>
+            <Button onClick={() => setSelectedCategory(null)} className="bg-truck-blue hover:bg-blue-700">
+              Back to Categories
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     const currentQuestion = questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
@@ -361,7 +377,7 @@ export default function DotPractice() {
               <div>
                 <h2 className="text-lg font-medium text-gray-900">DOT Practice</h2>
                 <p className="text-sm text-gray-600">
-                  Question {currentQuestionIndex + 1} of {questions.length}
+                  Question {currentQuestionIndex + 1} of {questions?.length || 0}
                 </p>
               </div>
             </div>
@@ -435,7 +451,7 @@ export default function DotPractice() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900 flex-1">{currentQuestion.question}</h3>
+                <h3 className="text-lg font-medium text-gray-900 flex-1">{currentQuestion?.question}</h3>
                 <Button
                   variant="ghost"
                   size="sm"

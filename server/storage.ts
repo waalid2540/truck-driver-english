@@ -246,7 +246,7 @@ export class MemStorage implements IStorage {
     const message: ChatMessage = { 
       ...insertMessage, 
       id,
-      createdAt: new Date(),
+      timestamp: new Date(),
     };
     this.chatMessages.set(id, message);
     return message;
