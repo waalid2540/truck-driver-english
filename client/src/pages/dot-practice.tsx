@@ -34,7 +34,7 @@ export default function DotPractice() {
   
   const { toast } = useToast();
 
-  // Initialize speech recognition and synthesis
+  // Initialize speech recognition and synthesis with mobile optimization
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -71,6 +71,16 @@ export default function DotPractice() {
       }
       
       synthRef.current = window.speechSynthesis;
+      
+      // Mobile volume optimization - request audio context activation
+      if (synthRef.current && 'AudioContext' in window) {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (audioContext.state === 'suspended') {
+          document.addEventListener('touchstart', () => {
+            audioContext.resume();
+          }, { once: true });
+        }
+      }
     }
   }, [toast]);
 
@@ -135,9 +145,23 @@ export default function DotPractice() {
       setIsSpeaking(true);
       
       const utterance = new SpeechSynthesisUtterance(`Officer asks: ${currentQuestion.question}`);
-      utterance.rate = 0.8;
-      utterance.pitch = 1;
+      
+      // Mobile-optimized settings for better volume and clarity
+      utterance.rate = 0.7;
+      utterance.pitch = 0.9;
       utterance.volume = 1;
+      
+      // Try to use a more suitable voice for mobile
+      const voices = synthRef.current.getVoices();
+      const maleVoice = voices.find(voice => 
+        voice.name.includes('Male') || 
+        voice.name.includes('David') || 
+        voice.name.includes('Daniel') ||
+        voice.lang.startsWith('en')
+      );
+      if (maleVoice) {
+        utterance.voice = maleVoice;
+      }
       
       utterance.onend = () => {
         setIsSpeaking(false);
@@ -160,9 +184,23 @@ export default function DotPractice() {
     setIsSpeaking(true);
     
     const utterance = new SpeechSynthesisUtterance(`Professional response: ${text}`);
-    utterance.rate = 0.8;
-    utterance.pitch = 1;
+    
+    // Mobile-optimized settings for driver response
+    utterance.rate = 0.7;
+    utterance.pitch = 1.1;
     utterance.volume = 1;
+    
+    // Try to use a different voice for driver response (higher pitch for distinction)
+    const voices = synthRef.current.getVoices();
+    const femaleVoice = voices.find(voice => 
+      voice.name.includes('Female') || 
+      voice.name.includes('Karen') || 
+      voice.name.includes('Samantha') ||
+      (voice.lang.startsWith('en') && voice.name.toLowerCase().includes('female'))
+    );
+    if (femaleVoice) {
+      utterance.voice = femaleVoice;
+    }
     
     utterance.onend = () => {
       setIsSpeaking(false);
