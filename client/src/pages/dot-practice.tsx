@@ -170,6 +170,7 @@ export default function DotPractice() {
       }
 
       const audio = new Audio(audioUrl);
+      audio.volume = 1.0; // Maximum volume for officer voice
       
       audio.onended = () => {
         setIsSpeaking(false);
@@ -196,7 +197,7 @@ export default function DotPractice() {
         const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
         utterance.rate = 0.8;
         utterance.pitch = 0.9;
-        utterance.volume = 1;
+        utterance.volume = 1.0; // Maximum volume
         utterance.onend = () => setIsSpeaking(false);
         synthRef.current.speak(utterance);
       }
@@ -235,6 +236,7 @@ export default function DotPractice() {
       }
 
       const audio = new Audio(audioUrl);
+      audio.volume = 1.0; // Maximum volume for driver voice
       
       audio.onended = () => {
         setIsSpeaking(false);
@@ -263,7 +265,7 @@ export default function DotPractice() {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.8;
         utterance.pitch = 1.1;
-        utterance.volume = 1;
+        utterance.volume = 1.0; // Maximum volume
         utterance.onend = () => {
           setIsSpeaking(false);
           if (autoPlay && questions) {
