@@ -319,14 +319,7 @@ export default function DotPractice() {
       completed: false,
     });
 
-    if (isAudioEnabled) {
-      setTimeout(() => {
-        if (synthRef.current) {
-          const utterance = new SpeechSynthesisUtterance("Starting officer-driver conversation practice. Listen for the officer's questions and respond naturally.");
-          synthRef.current.speak(utterance);
-        }
-      }, 1000);
-    }
+    // Removed introduction voice to avoid interference with officer questions
   };
 
   const handleShowAnswer = () => {
