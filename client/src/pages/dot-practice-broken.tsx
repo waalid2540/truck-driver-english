@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Shield, FileText, TrafficCone, Volume2, VolumeX, Mic, MicOff, Truck, Package } from "lucide-react";
+import { ArrowLeft, Shield, FileText, TrafficCone, Check, X, Volume2, VolumeX, Mic, MicOff, Repeat, PlayCircle, Truck, Package } from "lucide-react";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +60,7 @@ export default function DotPractice() {
         recognitionRef.current.onend = () => {
           setIsListening(false);
           if (autoRepeat && isAudioEnabled && selectedCategory) {
+            // Auto-restart listening after speech ends
             setTimeout(() => startListening(), 1000);
           }
         };
@@ -73,16 +74,23 @@ export default function DotPractice() {
   const speak = async (text: string) => {
     if (!isAudioEnabled || !synthRef.current) return;
     
+    // Stop any current speech
     synthRef.current.cancel();
+    
     setIsSpeaking(true);
     
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
+    utterance.rate = 0.8;
     utterance.pitch = 1;
     utterance.volume = 1;
     
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+    
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+    };
     
     synthRef.current.speak(utterance);
   };
@@ -140,15 +148,6 @@ export default function DotPractice() {
     } else if (command.includes('home') || command.includes('menu')) {
       resetPractice();
     }
-
-    // Reset response
-    if (command.includes('reset') || command.includes('clear')) {
-      setUserResponse("");
-      toast({
-        title: "Response cleared",
-        description: "You can now provide a new response.",
-      });
-    }
   };
 
   // Read the current officer question for conversation practice
@@ -182,7 +181,7 @@ export default function DotPractice() {
     
     // Simple scoring based on matching key words and phrases
     let matchScore = 0;
-    correctWords.forEach((word: string) => {
+    correctWords.forEach(word => {
       if (word.length > 3 && responseWords.some(rWord => rWord.includes(word) || word.includes(rWord))) {
         matchScore++;
       }
@@ -221,16 +220,16 @@ export default function DotPractice() {
 
   const { data: questions } = useQuery({
     queryKey: ["/api/dot-questions", selectedCategory],
-    queryFn: () => api.getDotQuestionsByCategory(selectedCategory!),
+    queryFn: () => api.getDotQuestions(selectedCategory!),
     enabled: !!selectedCategory,
   });
 
   // Auto-read question when it changes
   useEffect(() => {
-    if (questions && selectedCategory && !showResult && isAudioEnabled) {
+    if (selectedCategory && questions && isAudioEnabled && !showResult) {
       setTimeout(() => readCurrentQuestion(), 500);
     }
-  }, [currentQuestionIndex, selectedCategory, questions, isAudioEnabled, showResult]);
+  }, [currentQuestionIndex, selectedCategory, questions, isAudioEnabled, showResult, readCurrentQuestion]);
 
   const createSessionMutation = useMutation({
     mutationFn: api.createPracticeSession,
@@ -271,7 +270,8 @@ export default function DotPractice() {
     // Start audio if enabled
     if (isAudioEnabled) {
       setTimeout(() => {
-        speak("Starting practice session. Listen for the officer's questions and respond naturally.");
+        speak("Starting DOT practice session. Please wait for the first question.");
+        setTimeout(() => startListening(), 2000);
       }, 1000);
     }
   };
@@ -352,105 +352,130 @@ export default function DotPractice() {
     }
   };
 
-  // Category selection view
-  if (!selectedCategory) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Home</span>
-                </Button>
-              </Link>
-              <h1 className="text-3xl font-bold text-gray-900">DOT Practice</h1>
-            </div>
-
-            {/* Audio Controls */}
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={() => setIsAudioEnabled(!isAudioEnabled)}
-                variant={isAudioEnabled ? "default" : "outline"}
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                {isAudioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                <span>{isAudioEnabled ? "Audio On" : "Audio Off"}</span>
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories?.map((category) => {
-              const IconComponent = getCategoryIcon(category.name);
-              return (
-                <Card
-                  key={category.id}
-                  className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-truck-blue"
-                  onClick={() => startPractice(category.id)}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className={`p-3 rounded-lg ${getCategoryColor(category.color)}`}>
-                        <IconComponent className="h-8 w-8" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900">{category.name}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{category.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-gray-500">
-                      <span>{category.questionsCount} questions</span>
-                      <Button size="sm" className="bg-truck-blue hover:bg-blue-700">
-                        Start Practice
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+  if (selectedCategory && questions) {
+    // Handle empty questions array
+    if (questions.length === 0) {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl mb-4">📝</div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">No Questions Available</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">This category is ready for custom prompts.</p>
+            <Button onClick={() => setSelectedCategory(null)} className="bg-truck-blue hover:bg-blue-700">
+              Back to Categories
+            </Button>
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  // Practice session view
-  if (questions && questions.length > 0) {
     const currentQuestion = questions[currentQuestionIndex];
+    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <Button
-              onClick={resetPractice}
-              variant="ghost"
-              size="sm"
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Categories</span>
-            </Button>
-
+      <div className="pb-20">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetPractice}
+                className="p-2"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">DOT Practice</h2>
+                <p className="text-sm text-gray-600">
+                  Question {currentQuestionIndex + 1} of {questions?.length || 0}
+                </p>
+              </div>
+            </div>
+            
             {/* Audio Controls */}
             <div className="flex items-center space-x-2">
               <Button
-                onClick={() => setIsAudioEnabled(!isAudioEnabled)}
-                variant={isAudioEnabled ? "default" : "outline"}
+                variant="ghost"
                 size="sm"
-                className="flex items-center space-x-2"
+                onClick={() => setAutoRepeat(!autoRepeat)}
+                className={`p-2 ${autoRepeat ? 'text-truck-blue' : 'text-gray-400'}`}
+                title="Auto-repeat listening"
+              >
+                <Repeat className="h-4 w-4" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={readCurrentQuestion}
+                className="p-2"
+                title="Read question aloud"
+                disabled={isSpeaking}
+              >
+                <PlayCircle className={`h-4 w-4 ${isSpeaking ? 'text-truck-blue' : 'text-gray-600'}`} />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={isListening ? stopListening : startListening}
+                className={`p-2 ${isListening ? 'text-green-600' : 'text-gray-600'}`}
+                title={isListening ? 'Stop listening' : 'Start voice recognition'}
+              >
+                {isListening ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsAudioEnabled(!isAudioEnabled)}
+                className={`p-2 ${isAudioEnabled ? 'text-truck-blue' : 'text-gray-400'}`}
+                title={isAudioEnabled ? 'Disable audio' : 'Enable audio'}
               >
                 {isAudioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                <span>{isAudioEnabled ? "Audio On" : "Audio Off"}</span>
               </Button>
             </div>
           </div>
+          
+          {isListening && (
+            <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-green-700">Listening for your answer...</span>
+              </div>
+            </div>
+          )}
+        </div>
 
+        <div className="p-4 space-y-6">
+          {/* Progress */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
+              <span>Progress</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+
+          {/* Question */}
           <Card>
             <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900 flex-1">{currentQuestion?.question}</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={readCurrentQuestion}
+                  className="ml-2 p-1"
+                  title="Read question aloud"
+                  disabled={isSpeaking}
+                >
+                  <Volume2 className={`h-4 w-4 ${isSpeaking ? 'text-truck-blue' : 'text-gray-500'}`} />
+                </Button>
+              </div>
+              
               {/* Voice Instructions */}
               {isAudioEnabled && (
                 <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -565,20 +590,84 @@ export default function DotPractice() {
                       <ArrowLeft className="h-4 w-4 rotate-180" />
                     </Button>
                   </div>
-                )}
               </div>
+
+              {showResult && currentQuestion.explanation && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">Explanation</h4>
+                  <p className="text-blue-800 text-sm">{currentQuestion.explanation}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* Next Button */}
+          {selectedAnswer && !showResult && (
+            <Button
+              onClick={handleNextQuestion}
+              className="w-full bg-truck-blue hover:bg-blue-700"
+            >
+              {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Complete Practice'}
+            </Button>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading Questions...</h2>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-truck-blue mx-auto"></div>
+    <div className="pb-20">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 p-4 flex items-center space-x-3">
+        <Link href="/">
+          <Button variant="ghost" size="sm" className="p-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </Link>
+        <div>
+          <h2 className="text-lg font-medium">DOT Practice</h2>
+          <p className="text-sm text-gray-600">Regulation & Safety Terms</p>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Practice Categories */}
+        <div className="space-y-3">
+          {categories?.map((category: any) => {
+            const Icon = getCategoryIcon(category.name);
+            const colorClasses = getCategoryColor(category.color);
+            
+            return (
+              <Card key={category.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClasses}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{category.name}</h4>
+                        <p className="text-sm text-gray-600">{category.questionsCount} questions available</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => startPractice(category.id)}
+                      className={`${
+                        category.color === 'truck-orange'
+                          ? 'bg-truck-orange hover:bg-orange-600'
+                          : category.color === 'truck-blue'
+                          ? 'bg-truck-blue hover:bg-blue-700'
+                          : 'bg-green-600 hover:bg-green-700'
+                      } text-white`}
+                    >
+                      Practice
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
