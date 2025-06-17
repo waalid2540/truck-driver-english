@@ -200,6 +200,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Professional DOT practice voice endpoint
+  app.post("/api/speak-dot", async (req, res) => {
+    try {
+      const { text, voice } = req.body;
+      if (!text) {
+        return res.status(400).json({ message: "No text provided" });
+      }
+
+      // Generate professional AI voice for DOT training
+      const voiceType = voice === 'driver' ? 'driver' : 'officer';
+      const audioBuffer = await generateSpeech(text, voiceType);
+      
+      res.set({
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': audioBuffer.length,
+        'Cache-Control': 'public, max-age=3600',
+      });
+      
+      res.send(audioBuffer);
+    } catch (error) {
+      console.error("DOT voice generation error:", error);
+      res.status(500).json({ message: "Failed to generate professional voice: " + (error as Error).message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

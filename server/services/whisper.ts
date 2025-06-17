@@ -46,14 +46,20 @@ export async function transcribeAudio(audioBuffer: Buffer, fileName: string): Pr
   }
 }
 
-export async function generateSpeech(text: string): Promise<Buffer> {
+export async function generateSpeech(text: string, voice: 'officer' | 'driver' = 'officer'): Promise<Buffer> {
   try {
+    // Professional voice selection for DOT practice scenarios
+    const voiceMap = {
+      officer: "echo", // Authoritative, clear male voice for DOT officers
+      driver: "nova"   // Professional, articulate voice for driver responses
+    };
+
     const response = await openai.audio.speech.create({
-      model: "tts-1-hd",
-      voice: "alloy", // Natural, friendly voice good for coaching
+      model: "tts-1-hd", // High quality model for professional training
+      voice: voiceMap[voice],
       input: text,
       response_format: "mp3",
-      speed: 0.9, // Slightly slower for better comprehension
+      speed: 0.85, // Optimal speed for professional communication training
     });
     
     const buffer = Buffer.from(await response.arrayBuffer());

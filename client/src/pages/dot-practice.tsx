@@ -135,85 +135,131 @@ export default function DotPractice() {
     }
   }, [questions, autoPlay, showAnswer, isSpeaking, questionsLoading, currentQuestionIndex, isAudioEnabled]);
 
-  const speakOfficerQuestion = () => {
+  const speakOfficerQuestion = async () => {
     if (!questions || !isAudioEnabled || !questions[currentQuestionIndex]) return;
     
     const currentQuestion = questions[currentQuestionIndex];
+    setIsSpeaking(true);
 
-    if (synthRef.current) {
-      synthRef.current.cancel();
-      setIsSpeaking(true);
-      
-      const utterance = new SpeechSynthesisUtterance(`Officer asks: ${currentQuestion.question}`);
-      
-      // Mobile-optimized settings for better volume and clarity
-      utterance.rate = 0.7;
-      utterance.pitch = 0.9;
-      utterance.volume = 1;
-      
-      // Try to use a more suitable voice for mobile
-      const voices = synthRef.current.getVoices();
-      const maleVoice = voices.find(voice => 
-        voice.name.includes('Male') || 
-        voice.name.includes('David') || 
-        voice.name.includes('Daniel') ||
-        voice.lang.startsWith('en')
-      );
-      if (maleVoice) {
-        utterance.voice = maleVoice;
+    try {
+      // Use professional AI voice for officer
+      const response = await fetch('/api/speak-dot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: `Officer asks: ${currentQuestion.question}`,
+          voice: 'officer'
+        }),
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          // Auto-start listening after officer speaks
+          if (isAudioEnabled && !userResponse) {
+            setTimeout(() => startListening(), 1000);
+          }
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+      } else {
+        throw new Error('Failed to generate professional voice');
       }
+    } catch (error) {
+      console.error('Professional voice error:', error);
+      setIsSpeaking(false);
+      toast({
+        title: "Voice Error",
+        description: "Using fallback voice system",
+        variant: "destructive"
+      });
       
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        // Auto-start listening after officer speaks
-        if (isAudioEnabled && !userResponse) {
-          setTimeout(() => startListening(), 1000);
-        }
-      };
-      
-      utterance.onerror = () => setIsSpeaking(false);
-      
-      synthRef.current.speak(utterance);
+      // Fallback to browser synthesis
+      if (synthRef.current) {
+        const utterance = new SpeechSynthesisUtterance(`Officer asks: ${currentQuestion.question}`);
+        utterance.rate = 0.7;
+        utterance.pitch = 0.9;
+        utterance.volume = 1;
+        utterance.onend = () => setIsSpeaking(false);
+        synthRef.current.speak(utterance);
+      }
     }
   };
 
-  const speakDriverResponse = (text: string) => {
-    if (!isAudioEnabled || !synthRef.current) return;
+  const speakDriverResponse = async (text: string) => {
+    if (!isAudioEnabled) return;
     
-    synthRef.current.cancel();
     setIsSpeaking(true);
-    
-    const utterance = new SpeechSynthesisUtterance(`Professional response: ${text}`);
-    
-    // Mobile-optimized settings for driver response
-    utterance.rate = 0.7;
-    utterance.pitch = 1.1;
-    utterance.volume = 1;
-    
-    // Try to use a different voice for driver response (higher pitch for distinction)
-    const voices = synthRef.current.getVoices();
-    const femaleVoice = voices.find(voice => 
-      voice.name.includes('Female') || 
-      voice.name.includes('Karen') || 
-      voice.name.includes('Samantha') ||
-      (voice.lang.startsWith('en') && voice.name.toLowerCase().includes('female'))
-    );
-    if (femaleVoice) {
-      utterance.voice = femaleVoice;
-    }
-    
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      // Auto-advance to next question after driver response is spoken
-      if (autoPlay && questions) {
-        setTimeout(() => {
-          handleNextQuestion();
-        }, 3000); // 3 second pause after driver response
+
+    try {
+      // Use professional AI voice for driver response
+      const response = await fetch('/api/speak-dot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: `Professional response: ${text}`,
+          voice: 'driver'
+        }),
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          // Auto-advance to next question after driver response is spoken
+          if (autoPlay && questions) {
+            setTimeout(() => {
+              handleNextQuestion();
+            }, 3000); // 3 second pause after driver response
+          }
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+      } else {
+        throw new Error('Failed to generate professional driver voice');
       }
-    };
-    utterance.onerror = () => setIsSpeaking(false);
-    
-    synthRef.current.speak(utterance);
+    } catch (error) {
+      console.error('Professional driver voice error:', error);
+      setIsSpeaking(false);
+      
+      // Fallback to browser synthesis
+      if (synthRef.current) {
+        const utterance = new SpeechSynthesisUtterance(`Professional response: ${text}`);
+        utterance.rate = 0.7;
+        utterance.pitch = 1.1;
+        utterance.volume = 1;
+        utterance.onend = () => {
+          setIsSpeaking(false);
+          if (autoPlay && questions) {
+            setTimeout(() => handleNextQuestion(), 3000);
+          }
+        };
+        synthRef.current.speak(utterance);
+      }
+    }
   };
 
   const startListening = () => {
