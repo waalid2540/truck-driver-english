@@ -228,18 +228,58 @@ export default function DotPractice() {
     
     setIsSpeaking(true);
 
-    // Use browser synthesis for consistent mobile volume
+    try {
+      // Try GTTS first for better mobile volume
+      const response = await fetch('/api/speak-dot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text,
+          voice: 'driver'
+        }),
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audio = new Audio(audioUrl);
+        audio.volume = 1.0;
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          // Auto-advance to next question after driver response is spoken
+          if (autoPlay && questions) {
+            setTimeout(() => {
+              handleNextQuestion();
+            }, 500);
+          }
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+        return;
+      }
+    } catch (error) {
+      console.log('GTTS not available for driver, using browser synthesis');
+    }
+
+    // Fallback to browser synthesis
     if (synthRef.current) {
-      synthRef.current.cancel(); // Stop any current speech
+      synthRef.current.cancel();
       
       const utterance = new SpeechSynthesisUtterance(text);
-      
-      // Mobile-optimized settings for driver response
       utterance.rate = 0.7;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
       
-      // Find a different voice for driver to distinguish from officer
       const voices = synthRef.current.getVoices();
       const driverVoice = voices.find(voice => 
         voice.lang.startsWith('en') && 
@@ -252,7 +292,6 @@ export default function DotPractice() {
       
       utterance.onend = () => {
         setIsSpeaking(false);
-        // Auto-advance to next question after driver response is spoken
         if (autoPlay && questions) {
           setTimeout(() => {
             handleNextQuestion();

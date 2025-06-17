@@ -93,6 +93,7 @@ The application is designed as a mobile-first progressive web app with a maximum
 - June 17, 2025: Loaded complete dataset of 200 authentic officer-driver conversation pairs for realistic traffic stop practice
 - June 17, 2025: Implemented fully hands-free DOT practice system with auto-play officer questions and voice response recognition
 - June 17, 2025: Added comprehensive audio controls including auto-play mode, manual controls, and professional response playback
+- June 17, 2025: Integrated Google Text-to-Speech (GTTS) for enhanced mobile audio volume with browser synthesis fallback
 
 ## User Preferences
 
