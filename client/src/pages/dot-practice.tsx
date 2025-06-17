@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Shield, FileText, TrafficCone, Truck, Package, Volume2, VolumeX, Mic, MicOff, PlayCircle, StopCircle } from "lucide-react";
+import { ArrowLeft, Shield, Volume2, VolumeX, Mic, MicOff, PlayCircle, StopCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +22,6 @@ export default function DotPractice() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userResponse, setUserResponse] = useState<string>("");
   const [showAnswer, setShowAnswer] = useState(false);
-  const [score, setScore] = useState(0);
   const [sessionId, setSessionId] = useState<number | null>(null);
   
   // Audio and hands-free features
@@ -75,12 +74,12 @@ export default function DotPractice() {
     }
   }, [toast]);
 
-  const { data: categories } = useQuery({
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["/api/dot-categories"],
     queryFn: api.getDotCategories,
   });
 
-  const { data: questions } = useQuery({
+  const { data: questions, isLoading: questionsLoading } = useQuery({
     queryKey: ["/api/dot-questions", selectedCategory],
     queryFn: () => api.getDotQuestions(selectedCategory!),
     enabled: !!selectedCategory,
@@ -100,23 +99,22 @@ export default function DotPractice() {
       queryClient.invalidateQueries({ queryKey: ["/api/practice-sessions"] });
       toast({
         title: "Practice Complete!",
-        description: `You completed ${questions?.length || 0} officer-driver conversations.`,
+        description: `You completed the practice session.`,
       });
     },
   });
 
   // Auto-speak officer question when it loads
   useEffect(() => {
-    if (questions && questions.length > 0 && isAudioEnabled && autoPlay && !showAnswer) {
+    if (questions && questions.length > 0 && isAudioEnabled && autoPlay && !showAnswer && !questionsLoading) {
       setTimeout(() => speakOfficerQuestion(), 1000);
     }
-  }, [currentQuestionIndex, questions, isAudioEnabled, autoPlay, showAnswer]);
+  }, [currentQuestionIndex, questions, isAudioEnabled, autoPlay, showAnswer, questionsLoading]);
 
   const speakOfficerQuestion = () => {
-    if (!questions || !isAudioEnabled) return;
+    if (!questions || !isAudioEnabled || !questions[currentQuestionIndex]) return;
     
     const currentQuestion = questions[currentQuestionIndex];
-    if (!currentQuestion) return;
 
     if (synthRef.current) {
       synthRef.current.cancel();
@@ -191,7 +189,6 @@ export default function DotPractice() {
   const startPractice = (categoryId: number) => {
     setSelectedCategory(categoryId);
     setCurrentQuestionIndex(0);
-    setScore(0);
     setShowAnswer(false);
     setUserResponse("");
 
@@ -216,14 +213,14 @@ export default function DotPractice() {
   const handleShowAnswer = () => {
     setShowAnswer(true);
     
-    if (questions && isAudioEnabled) {
+    if (questions && isAudioEnabled && questions[currentQuestionIndex]) {
       const currentQuestion = questions[currentQuestionIndex];
       setTimeout(() => speakDriverResponse(currentQuestion.correctAnswer), 500);
     }
   };
 
   const handleNextQuestion = () => {
-    if (!questions) return;
+    if (!questions || questions.length === 0) return;
 
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
@@ -231,13 +228,12 @@ export default function DotPractice() {
       setShowAnswer(false);
     } else {
       // Practice complete
-      const finalScore = Math.round((score / questions.length) * 100);
       if (sessionId) {
         updateSessionMutation.mutate({
           id: sessionId,
           updates: {
-            duration: Math.floor((Date.now() - (sessionId * 1000)) / 60000), // Approximate duration
-            score: finalScore,
+            duration: 5,
+            score: 100,
             completed: true,
           },
         });
@@ -261,28 +257,22 @@ export default function DotPractice() {
     setCurrentQuestionIndex(0);
     setUserResponse("");
     setShowAnswer(false);
-    setScore(0);
     setSessionId(null);
     stopListening();
     stopSpeaking();
   };
 
-  const getCategoryIcon = (name: string) => {
-    switch (name.toLowerCase()) {
-      case 'safety regulations':
-        return Shield;
-      case 'documentation':
-        return FileText;
-      case 'road terminology':
-        return TrafficCone;
-      case 'vehicle operations':
-        return Truck;
-      case 'loading & cargo':
-        return Package;
-      default:
-        return Shield;
-    }
-  };
+  // Show loading state
+  if (categoriesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Loading DOT Practice...</h2>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   // Category selection view
   if (!selectedCategory) {
@@ -323,36 +313,64 @@ export default function DotPractice() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories?.map((category: any) => {
-              const IconComponent = getCategoryIcon(category.name);
-              return (
-                <Card
-                  key={category.id}
-                  className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-500"
-                  onClick={() => startPractice(category.id)}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className="p-3 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
-                        <IconComponent className="h-8 w-8" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{category.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{category.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-                      <span>{category.questionsCount} conversations</span>
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                        Start Practice
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* Only show Officer Interactions category with 200 conversations */}
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-500"
+              onClick={() => startPractice(6)}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="p-3 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
+                    <Shield className="h-8 w-8" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Officer Interactions</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Professional communication with DOT officers during traffic stops</p>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                  <span>200 conversations</span>
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                    Start Practice
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Coming Soon categories */}
+            <Card className="opacity-50">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="p-3 rounded-lg bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
+                    <Shield className="h-8 w-8" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-500 dark:text-gray-400">More Categories</h3>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Additional practice categories coming soon</p>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-400">
+                  <span>Coming soon</span>
+                  <Button size="sm" disabled variant="outline">
+                    Coming Soon
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state for questions
+  if (questionsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Loading Conversations...</h2>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
         </div>
       </div>
     );
@@ -566,11 +584,14 @@ export default function DotPractice() {
     );
   }
 
+  // No questions available
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Loading Conversations...</h2>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">No conversations available</h2>
+        <Button onClick={resetPractice} variant="outline">
+          Back to Categories
+        </Button>
       </div>
     </div>
   );

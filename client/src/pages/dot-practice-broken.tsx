@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Shield, FileText, TrafficCone, Check, X, Volume2, VolumeX, Mic, MicOff, Repeat, PlayCircle, Truck, Package } from "lucide-react";
+import { ArrowLeft, Shield, FileText, TrafficCone, Truck, Package, Volume2, VolumeX, Mic, MicOff, PlayCircle, StopCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -21,16 +21,15 @@ export default function DotPractice() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userResponse, setUserResponse] = useState<string>("");
-  const [isQuestionAsked, setIsQuestionAsked] = useState(false);
-  const [showResult, setShowResult] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   const [score, setScore] = useState(0);
   const [sessionId, setSessionId] = useState<number | null>(null);
   
   // Audio and hands-free features
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isListening, setIsListening] = useState(false);
-  const [autoRepeat, setAutoRepeat] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(true);
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   
@@ -42,176 +41,39 @@ export default function DotPractice() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
+        recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = false;
         recognitionRef.current.lang = 'en-US';
         
         recognitionRef.current.onresult = (event: any) => {
-          const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-          console.log('Speech recognized:', transcript);
-          handleVoiceCommand(transcript);
+          const transcript = event.results[0][0].transcript.trim();
+          setUserResponse(transcript);
+          setIsListening(false);
+          
+          toast({
+            title: "Response Recorded",
+            description: `Your response: "${transcript}"`,
+          });
         };
         
         recognitionRef.current.onerror = (event: any) => {
           console.error('Speech recognition error:', event.error);
           setIsListening(false);
+          toast({
+            title: "Speech Recognition Error",
+            description: "Please try speaking again or type your response.",
+            variant: "destructive"
+          });
         };
         
         recognitionRef.current.onend = () => {
           setIsListening(false);
-          if (autoRepeat && isAudioEnabled && selectedCategory) {
-            // Auto-restart listening after speech ends
-            setTimeout(() => startListening(), 1000);
-          }
         };
       }
       
       synthRef.current = window.speechSynthesis;
     }
-  }, [autoRepeat, isAudioEnabled, selectedCategory]);
-
-  // Speech synthesis function
-  const speak = async (text: string) => {
-    if (!isAudioEnabled || !synthRef.current) return;
-    
-    // Stop any current speech
-    synthRef.current.cancel();
-    
-    setIsSpeaking(true);
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.8;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    
-    utterance.onend = () => {
-      setIsSpeaking(false);
-    };
-    
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-    };
-    
-    synthRef.current.speak(utterance);
-  };
-
-  // Start voice recognition
-  const startListening = () => {
-    if (!recognitionRef.current || isListening) return;
-    
-    try {
-      setIsListening(true);
-      recognitionRef.current.start();
-      console.log('Speech recognition started');
-    } catch (error) {
-      console.error('Error starting speech recognition:', error);
-      setIsListening(false);
-    }
-  };
-
-  // Stop voice recognition
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
-  };
-
-  // Handle voice commands for conversational practice
-  const handleVoiceCommand = (command: string) => {
-    const currentQuestion = questions?.[currentQuestionIndex];
-    if (!currentQuestion) return;
-
-    // Store the user's voice response
-    setUserResponse(command);
-    
-    // Stop listening while processing
-    stopListening();
-    
-    // Provide feedback on the response
-    evaluateDriverResponse(command);
-
-    // Navigation commands
-    if (command.includes('next') || command.includes('continue')) {
-      if (userResponse && !showResult) {
-        handleNextQuestion();
-      }
-    } else if (command.includes('repeat') || command.includes('again')) {
-      readCurrentQuestion();
-    } else if (command.includes('back') || command.includes('previous')) {
-      if (currentQuestionIndex > 0) {
-        setCurrentQuestionIndex(prev => prev - 1);
-        setUserResponse("");
-        setShowResult(false);
-        setIsQuestionAsked(false);
-      }
-    } else if (command.includes('home') || command.includes('menu')) {
-      resetPractice();
-    }
-  };
-
-  // Read the current officer question for conversation practice
-  const readCurrentQuestion = () => {
-    if (!questions || !isAudioEnabled) return;
-    
-    const currentQuestion = questions[currentQuestionIndex];
-    if (!currentQuestion) return;
-
-    const questionText = `Officer asks: ${currentQuestion.question}`;
-    speak(questionText);
-    setIsQuestionAsked(true);
-    
-    // Start listening for driver's response after officer asks
-    setTimeout(() => {
-      if (isAudioEnabled) {
-        startListening();
-      }
-    }, 2000);
-  };
-
-  // Evaluate driver's voice response to officer's question
-  const evaluateDriverResponse = async (response: string) => {
-    const currentQuestion = questions?.[currentQuestionIndex];
-    if (!currentQuestion) return;
-
-    // Check if response contains key elements of the correct answer
-    const correctAnswer = currentQuestion.correctAnswer.toLowerCase();
-    const responseWords = response.toLowerCase().split(' ');
-    const correctWords = correctAnswer.split(' ');
-    
-    // Simple scoring based on matching key words and phrases
-    let matchScore = 0;
-    correctWords.forEach(word => {
-      if (word.length > 3 && responseWords.some(rWord => rWord.includes(word) || word.includes(rWord))) {
-        matchScore++;
-      }
-    });
-
-    const scorePercentage = (matchScore / correctWords.length) * 100;
-    const isGoodResponse = scorePercentage > 30; // 30% threshold for basic professional response
-
-    if (isGoodResponse) {
-      setScore(prev => prev + 1);
-      speak(`Good response. ${currentQuestion.explanation}`);
-      toast({
-        title: "Professional Response",
-        description: "That was a good professional answer to the officer.",
-      });
-    } else {
-      speak(`That response could be improved. Here's a better approach: ${currentQuestion.correctAnswer}. ${currentQuestion.explanation}`);
-      toast({
-        title: "Practice More",
-        description: "Try to be more specific and professional in your response.",
-        variant: "destructive"
-      });
-    }
-
-    setShowResult(true);
-    setTimeout(() => {
-      setShowResult(false);
-      setIsQuestionAsked(false);
-    }, 4000);
-  };
+  }, [toast]);
 
   const { data: categories } = useQuery({
     queryKey: ["/api/dot-categories"],
@@ -223,13 +85,6 @@ export default function DotPractice() {
     queryFn: () => api.getDotQuestions(selectedCategory!),
     enabled: !!selectedCategory,
   });
-
-  // Auto-read question when it changes
-  useEffect(() => {
-    if (selectedCategory && questions && isAudioEnabled && !showResult) {
-      setTimeout(() => readCurrentQuestion(), 500);
-    }
-  }, [currentQuestionIndex, selectedCategory, questions, isAudioEnabled, showResult, readCurrentQuestion]);
 
   const createSessionMutation = useMutation({
     mutationFn: api.createPracticeSession,
@@ -245,20 +100,101 @@ export default function DotPractice() {
       queryClient.invalidateQueries({ queryKey: ["/api/practice-sessions"] });
       toast({
         title: "Practice Complete!",
-        description: `You scored ${score}% on this practice session.`,
+        description: `You completed ${questions?.length || 0} officer-driver conversations.`,
       });
     },
   });
+
+  // Auto-speak officer question when it loads
+  useEffect(() => {
+    if (questions && questions.length > 0 && isAudioEnabled && autoPlay && !showAnswer) {
+      setTimeout(() => speakOfficerQuestion(), 1000);
+    }
+  }, [currentQuestionIndex, questions, isAudioEnabled, autoPlay, showAnswer]);
+
+  const speakOfficerQuestion = () => {
+    if (!questions || !isAudioEnabled) return;
+    
+    const currentQuestion = questions[currentQuestionIndex];
+    if (!currentQuestion) return;
+
+    if (synthRef.current) {
+      synthRef.current.cancel();
+      setIsSpeaking(true);
+      
+      const utterance = new SpeechSynthesisUtterance(`Officer asks: ${currentQuestion.question}`);
+      utterance.rate = 0.8;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        // Auto-start listening after officer speaks
+        if (isAudioEnabled && !userResponse) {
+          setTimeout(() => startListening(), 1000);
+        }
+      };
+      
+      utterance.onerror = () => setIsSpeaking(false);
+      
+      synthRef.current.speak(utterance);
+    }
+  };
+
+  const speakDriverResponse = (text: string) => {
+    if (!isAudioEnabled || !synthRef.current) return;
+    
+    synthRef.current.cancel();
+    setIsSpeaking(true);
+    
+    const utterance = new SpeechSynthesisUtterance(`Professional response: ${text}`);
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    synthRef.current.speak(utterance);
+  };
+
+  const startListening = () => {
+    if (!recognitionRef.current || isListening || isSpeaking) return;
+    
+    try {
+      setIsListening(true);
+      recognitionRef.current.start();
+      toast({
+        title: "Listening...",
+        description: "Speak your response to the officer's question.",
+      });
+    } catch (error) {
+      console.error('Error starting speech recognition:', error);
+      setIsListening(false);
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  const stopSpeaking = () => {
+    if (synthRef.current) {
+      synthRef.current.cancel();
+      setIsSpeaking(false);
+    }
+  };
 
   const startPractice = (categoryId: number) => {
     setSelectedCategory(categoryId);
     setCurrentQuestionIndex(0);
     setScore(0);
-    setShowResult(false);
+    setShowAnswer(false);
     setUserResponse("");
-    setIsQuestionAsked(false);
 
-    // Create practice session
     createSessionMutation.mutate({
       userId: 1,
       type: "dot",
@@ -267,12 +203,22 @@ export default function DotPractice() {
       completed: false,
     });
 
-    // Start audio if enabled
     if (isAudioEnabled) {
       setTimeout(() => {
-        speak("Starting DOT practice session. Please wait for the first question.");
-        setTimeout(() => startListening(), 2000);
+        if (synthRef.current) {
+          const utterance = new SpeechSynthesisUtterance("Starting officer-driver conversation practice. Listen for the officer's questions and respond naturally.");
+          synthRef.current.speak(utterance);
+        }
       }, 1000);
+    }
+  };
+
+  const handleShowAnswer = () => {
+    setShowAnswer(true);
+    
+    if (questions && isAudioEnabled) {
+      const currentQuestion = questions[currentQuestionIndex];
+      setTimeout(() => speakDriverResponse(currentQuestion.correctAnswer), 500);
     }
   };
 
@@ -282,13 +228,7 @@ export default function DotPractice() {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setUserResponse("");
-      setShowResult(false);
-      setIsQuestionAsked(false);
-      
-      // Read next question automatically
-      if (isAudioEnabled) {
-        setTimeout(() => readCurrentQuestion(), 1000);
-      }
+      setShowAnswer(false);
     } else {
       // Practice complete
       const finalScore = Math.round((score / questions.length) * 100);
@@ -296,7 +236,7 @@ export default function DotPractice() {
         updateSessionMutation.mutate({
           id: sessionId,
           updates: {
-            duration: 10, // Approximate duration
+            duration: Math.floor((Date.now() - (sessionId * 1000)) / 60000), // Approximate duration
             score: finalScore,
             completed: true,
           },
@@ -304,10 +244,15 @@ export default function DotPractice() {
       }
       
       if (isAudioEnabled) {
-        speak(`Practice session complete! You scored ${finalScore} percent. Great job!`);
+        setTimeout(() => {
+          if (synthRef.current) {
+            const utterance = new SpeechSynthesisUtterance(`Practice complete! You practiced ${questions.length} officer-driver conversations. Great job improving your professional communication skills.`);
+            synthRef.current.speak(utterance);
+          }
+        }, 1000);
       }
       
-      setTimeout(() => resetPractice(), 3000);
+      setTimeout(() => resetPractice(), 4000);
     }
   };
 
@@ -315,11 +260,11 @@ export default function DotPractice() {
     setSelectedCategory(null);
     setCurrentQuestionIndex(0);
     setUserResponse("");
-    setShowResult(false);
+    setShowAnswer(false);
     setScore(0);
     setSessionId(null);
-    setIsQuestionAsked(false);
     stopListening();
+    stopSpeaking();
   };
 
   const getCategoryIcon = (name: string) => {
@@ -339,335 +284,293 @@ export default function DotPractice() {
     }
   };
 
-  const getCategoryColor = (color: string) => {
-    switch (color) {
-      case 'truck-orange':
-        return 'text-truck-orange bg-orange-100';
-      case 'truck-blue':
-        return 'text-truck-blue bg-blue-100';
-      case 'green-600':
-        return 'text-green-600 bg-green-100';
-      default:
-        return 'text-truck-orange bg-orange-100';
-    }
-  };
-
-  if (selectedCategory && questions) {
-    // Handle empty questions array
-    if (questions.length === 0) {
-      return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-6xl mb-4">📝</div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">No Questions Available</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">This category is ready for custom prompts.</p>
-            <Button onClick={() => setSelectedCategory(null)} className="bg-truck-blue hover:bg-blue-700">
-              Back to Categories
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    const currentQuestion = questions[currentQuestionIndex];
-    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-
+  // Category selection view
+  if (!selectedCategory) {
     return (
-      <div className="pb-20">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetPractice}
-                className="p-2"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h2 className="text-lg font-medium text-gray-900">DOT Practice</h2>
-                <p className="text-sm text-gray-600">
-                  Question {currentQuestionIndex + 1} of {questions?.length || 0}
-                </p>
-              </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <Link href="/">
+                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Home</span>
+                </Button>
+              </Link>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">DOT Practice</h1>
             </div>
-            
+
             {/* Audio Controls */}
             <div className="flex items-center space-x-2">
               <Button
-                variant="ghost"
+                onClick={() => setAutoPlay(!autoPlay)}
+                variant={autoPlay ? "default" : "outline"}
                 size="sm"
-                onClick={() => setAutoRepeat(!autoRepeat)}
-                className={`p-2 ${autoRepeat ? 'text-truck-blue' : 'text-gray-400'}`}
-                title="Auto-repeat listening"
+                className="flex items-center space-x-2"
               >
-                <Repeat className="h-4 w-4" />
+                {autoPlay ? <PlayCircle className="h-4 w-4" /> : <StopCircle className="h-4 w-4" />}
+                <span>{autoPlay ? "Auto Play" : "Manual"}</span>
               </Button>
-              
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={readCurrentQuestion}
-                className="p-2"
-                title="Read question aloud"
-                disabled={isSpeaking}
-              >
-                <PlayCircle className={`h-4 w-4 ${isSpeaking ? 'text-truck-blue' : 'text-gray-600'}`} />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={isListening ? stopListening : startListening}
-                className={`p-2 ${isListening ? 'text-green-600' : 'text-gray-600'}`}
-                title={isListening ? 'Stop listening' : 'Start voice recognition'}
-              >
-                {isListening ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
                 onClick={() => setIsAudioEnabled(!isAudioEnabled)}
-                className={`p-2 ${isAudioEnabled ? 'text-truck-blue' : 'text-gray-400'}`}
-                title={isAudioEnabled ? 'Disable audio' : 'Enable audio'}
+                variant={isAudioEnabled ? "default" : "outline"}
+                size="sm"
+                className="flex items-center space-x-2"
               >
                 {isAudioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                <span>{isAudioEnabled ? "Audio On" : "Audio Off"}</span>
               </Button>
             </div>
           </div>
-          
-          {isListening && (
-            <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-green-700">Listening for your answer...</span>
-              </div>
-            </div>
-          )}
-        </div>
 
-        <div className="p-4 space-y-6">
-          {/* Progress */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
-              <span>Progress</span>
-              <span>{Math.round(progress)}%</span>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {categories?.map((category: any) => {
+              const IconComponent = getCategoryIcon(category.name);
+              return (
+                <Card
+                  key={category.id}
+                  className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-500"
+                  onClick={() => startPractice(category.id)}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="p-3 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
+                        <IconComponent className="h-8 w-8" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{category.name}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{category.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                      <span>{category.questionsCount} conversations</span>
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        Start Practice
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Practice session view
+  if (questions && questions.length > 0) {
+    const currentQuestion = questions[currentQuestionIndex];
+
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <Button
+              onClick={resetPractice}
+              variant="ghost"
+              size="sm"
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Categories</span>
+            </Button>
+
+            {/* Audio Controls */}
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => setAutoPlay(!autoPlay)}
+                variant={autoPlay ? "default" : "outline"}
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                {autoPlay ? <PlayCircle className="h-4 w-4" /> : <StopCircle className="h-4 w-4" />}
+                <span>{autoPlay ? "Auto" : "Manual"}</span>
+              </Button>
+              <Button
+                onClick={() => setIsAudioEnabled(!isAudioEnabled)}
+                variant={isAudioEnabled ? "default" : "outline"}
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                {isAudioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                <span>{isAudioEnabled ? "Audio On" : "Audio Off"}</span>
+              </Button>
             </div>
-            <Progress value={progress} className="h-2" />
           </div>
 
-          {/* Question */}
           <Card>
             <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900 flex-1">{currentQuestion?.question}</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={readCurrentQuestion}
-                  className="ml-2 p-1"
-                  title="Read question aloud"
-                  disabled={isSpeaking}
-                >
-                  <Volume2 className={`h-4 w-4 ${isSpeaking ? 'text-truck-blue' : 'text-gray-500'}`} />
-                </Button>
-              </div>
-              
-              {/* Voice Instructions */}
+              {/* Hands-free Instructions */}
               {isAudioEnabled && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-700">
-                    <span className="font-medium">Audio Practice:</span> Listen to the officer's question and respond naturally using your voice
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <span className="font-medium">Hands-Free Mode:</span> Officer questions play automatically. Use voice to respond or type manually.
                   </p>
                 </div>
               )}
               
               {/* Officer-Driver Conversation Interface */}
               <div className="space-y-4">
-                {/* Officer Question Display */}
-                <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="h-8 w-8 bg-indigo-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">O</span>
+                {/* Officer Question */}
+                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-8 w-8 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">Officer</span>
+                      </div>
+                      <span className="font-semibold text-indigo-700 dark:text-indigo-300">Officer asks:</span>
                     </div>
-                    <span className="font-semibold text-indigo-700">Officer:</span>
+                    <div className="flex items-center space-x-2">
+                      {isSpeaking && (
+                        <Button
+                          onClick={stopSpeaking}
+                          variant="ghost"
+                          size="sm"
+                          className="flex items-center space-x-1 text-red-600"
+                        >
+                          <StopCircle className="h-4 w-4" />
+                          <span className="text-xs">Stop</span>
+                        </Button>
+                      )}
+                      <Button
+                        onClick={speakOfficerQuestion}
+                        disabled={isSpeaking}
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center space-x-1"
+                      >
+                        <Volume2 className="h-4 w-4" />
+                        <span className="text-xs">Listen</span>
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-lg text-gray-800">{currentQuestion.question}</p>
+                  <p className="text-lg text-gray-800 dark:text-gray-200 font-medium">{currentQuestion.question}</p>
                 </div>
 
                 {/* Driver Response Section */}
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">D</span>
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">You</span>
+                      </div>
+                      <span className="font-semibold text-green-700 dark:text-green-300">Your Response:</span>
                     </div>
-                    <span className="font-semibold text-green-700">Your Response:</span>
+                    
+                    {/* Voice Controls */}
+                    <div className="flex items-center space-x-2">
+                      {isListening ? (
+                        <Button
+                          onClick={stopListening}
+                          variant="destructive"
+                          size="sm"
+                          className="flex items-center space-x-1"
+                        >
+                          <MicOff className="h-4 w-4" />
+                          <span className="text-xs">Stop</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={startListening}
+                          disabled={!isAudioEnabled || isSpeaking}
+                          size="sm"
+                          className="flex items-center space-x-1"
+                        >
+                          <Mic className="h-4 w-4" />
+                          <span className="text-xs">Speak</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   
                   {userResponse ? (
                     <div className="space-y-2">
-                      <p className="text-lg text-gray-800 italic">"{userResponse}"</p>
-                      {showResult && (
-                        <div className="mt-3 p-3 bg-white rounded border">
-                          <p className="text-sm font-medium text-gray-700 mb-1">Suggested Professional Response:</p>
-                          <p className="text-sm text-gray-600 italic">"{currentQuestion.correctAnswer}"</p>
-                          {currentQuestion.explanation && (
-                            <p className="text-xs text-gray-500 mt-2">{currentQuestion.explanation}</p>
-                          )}
-                        </div>
-                      )}
+                      <p className="text-lg text-gray-800 dark:text-gray-200 italic">"{userResponse}"</p>
                     </div>
                   ) : (
-                    <div className="flex items-center space-x-2 text-gray-500">
-                      {isListening ? (
-                        <>
+                    <div className="space-y-3">
+                      <textarea
+                        value={userResponse}
+                        onChange={(e) => setUserResponse(e.target.value)}
+                        placeholder="Speak your response or type here..."
+                        className="w-full p-3 border rounded-lg resize-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                        rows={2}
+                      />
+                      {isListening && (
+                        <div className="flex items-center space-x-2 text-red-600">
                           <div className="animate-pulse h-2 w-2 bg-red-500 rounded-full"></div>
                           <span className="text-sm">Listening for your response...</span>
-                        </>
-                      ) : (
-                        <span className="text-sm">Tap the microphone to respond or click "Ask Question" to hear it again</span>
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
+
+                {/* Professional Answer (when shown) */}
+                {showAnswer && (
+                  <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-yellow-800 dark:text-yellow-300">Professional Response:</h4>
+                      <Button
+                        onClick={() => speakDriverResponse(currentQuestion.correctAnswer)}
+                        disabled={isSpeaking}
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center space-x-1"
+                      >
+                        <Volume2 className="h-4 w-4" />
+                        <span className="text-xs">Listen</span>
+                      </Button>
+                    </div>
+                    <p className="text-gray-800 dark:text-gray-200 italic mb-2">"{currentQuestion.correctAnswer}"</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{currentQuestion.explanation}</p>
+                  </div>
+                )}
               </div>
 
-              {/* Voice Controls */}
+              {/* Action Buttons */}
               <div className="flex justify-center space-x-4 mt-6">
-                <Button
-                  onClick={readCurrentQuestion}
-                  disabled={isSpeaking}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center space-x-2"
-                >
-                  <Volume2 className="h-4 w-4" />
-                  <span>Ask Question</span>
-                </Button>
-                
-                {isListening ? (
-                  <Button
-                    onClick={stopListening}
-                    variant="destructive"
-                    size="sm"
+                {!showAnswer ? (
+                  <Button 
+                    onClick={handleShowAnswer} 
+                    disabled={!userResponse}
                     className="flex items-center space-x-2"
                   >
-                    <MicOff className="h-4 w-4" />
-                    <span>Stop Listening</span>
+                    <span>Show Professional Response</span>
                   </Button>
                 ) : (
-                  <Button
-                    onClick={startListening}
-                    disabled={!isAudioEnabled}
-                    size="sm"
-                    className="flex items-center space-x-2"
-                  >
-                    <Mic className="h-4 w-4" />
-                    <span>Start Responding</span>
+                  <Button onClick={handleNextQuestion} className="flex items-center space-x-2">
+                    <span>{currentQuestionIndex < questions.length - 1 ? 'Next Conversation' : 'Complete Practice'}</span>
+                    <ArrowLeft className="h-4 w-4 rotate-180" />
                   </Button>
                 )}
               </div>
 
-              {/* Progress and Navigation */}
-              <div className="mt-6 space-y-4">
-                <div className="flex justify-between items-center text-sm text-gray-600">
-                  <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
-                  <span>Score: {score}/{currentQuestionIndex + (userResponse ? 1 : 0)}</span>
+              {/* Progress */}
+              <div className="mt-6 space-y-2">
+                <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
+                  <span>Conversation {currentQuestionIndex + 1} of {questions.length}</span>
+                  <span>Progress: {Math.round(((currentQuestionIndex + (showAnswer ? 1 : 0)) / questions.length) * 100)}%</span>
                 </div>
                 
                 <Progress 
-                  value={((currentQuestionIndex + (userResponse ? 1 : 0)) / questions.length) * 100} 
+                  value={((currentQuestionIndex + (showAnswer ? 1 : 0)) / questions.length) * 100} 
                   className="w-full" 
                 />
-                
-                {userResponse && (
-                  <div className="flex justify-center">
-                    <Button onClick={handleNextQuestion} className="flex items-center space-x-2">
-                      <span>Next Question</span>
-                      <ArrowLeft className="h-4 w-4 rotate-180" />
-                    </Button>
-                  </div>
               </div>
-
-              {showResult && currentQuestion.explanation && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">Explanation</h4>
-                  <p className="text-blue-800 text-sm">{currentQuestion.explanation}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
-
-          {/* Next Button */}
-          {selectedAnswer && !showResult && (
-            <Button
-              onClick={handleNextQuestion}
-              className="w-full bg-truck-blue hover:bg-blue-700"
-            >
-              {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Complete Practice'}
-            </Button>
-          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="pb-20">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4 flex items-center space-x-3">
-        <Link href="/">
-          <Button variant="ghost" size="sm" className="p-2">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h2 className="text-lg font-medium">DOT Practice</h2>
-          <p className="text-sm text-gray-600">Regulation & Safety Terms</p>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-4">
-        {/* Practice Categories */}
-        <div className="space-y-3">
-          {categories?.map((category: any) => {
-            const Icon = getCategoryIcon(category.name);
-            const colorClasses = getCategoryColor(category.color);
-            
-            return (
-              <Card key={category.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClasses}`}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{category.name}</h4>
-                        <p className="text-sm text-gray-600">{category.questionsCount} questions available</p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => startPractice(category.id)}
-                      className={`${
-                        category.color === 'truck-orange'
-                          ? 'bg-truck-orange hover:bg-orange-600'
-                          : category.color === 'truck-blue'
-                          ? 'bg-truck-blue hover:bg-blue-700'
-                          : 'bg-green-600 hover:bg-green-700'
-                      } text-white`}
-                    >
-                      Practice
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Loading Conversations...</h2>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
       </div>
     </div>
   );
