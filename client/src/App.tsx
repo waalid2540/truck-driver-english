@@ -13,7 +13,7 @@ import { useEffect } from "react";
 
 function Router() {
   return (
-    <div className="max-w-md mx-auto bg-card min-h-screen shadow-lg relative border-l border-r border-border"></div>
+    <div className="max-w-md mx-auto bg-card min-h-screen shadow-lg relative border-l border-r border-border">
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/dot-practice" component={DotPractice} />
@@ -35,7 +35,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="bg-background min-h-screen"></div>
+        <div className="bg-background min-h-screen">
           <Toaster />
           <Router />
         </div>
