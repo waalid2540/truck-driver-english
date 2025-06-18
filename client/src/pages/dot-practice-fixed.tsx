@@ -124,9 +124,10 @@ export default function DotPracticeFixed() {
   const playDriverResponse = () => {
     if (!questions || questions.length === 0 || !questions[currentQuestionIndex]) return;
     const currentQuestion = questions[currentQuestionIndex];
-    const options = currentQuestion.options as string[];
-    const correctAnswer = options[currentQuestion.correctAnswer];
-    playVoice(correctAnswer, 'driver');
+    if (Array.isArray(currentQuestion.options)) {
+      const correctAnswer = currentQuestion.options[currentQuestion.correctAnswer];
+      playVoice(correctAnswer, 'driver');
+    }
   };
 
   const progress = questions && questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
@@ -249,7 +250,7 @@ export default function DotPracticeFixed() {
                     Professional Driver Response:
                   </h4>
                   <p className="text-green-700 dark:text-green-300 text-center mb-4">
-                    {(currentQuestion.options as string[])[currentQuestion.correctAnswer]}
+                    {Array.isArray(currentQuestion.options) ? currentQuestion.options[currentQuestion.correctAnswer] : 'Loading...'}
                   </p>
                   <div className="text-center">
                     <Button 
