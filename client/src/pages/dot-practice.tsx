@@ -157,21 +157,8 @@ export default function DotPractice() {
   }, [currentQuestionIndex, questions, isAudioEnabled, autoPlay, showAnswer, questionsLoading]);
 
   // Auto-show answer after officer speaks and play driver response
-  useEffect(() => {
-    if (questions && questions.length > 0 && autoPlay && !showAnswer && !isSpeaking && !questionsLoading) {
-      const timer = setTimeout(() => {
-        setShowAnswer(true);
-        if (isAudioEnabled && questions[currentQuestionIndex]) {
-          // Play driver response after showing the answer
-          const currentQuestion = questions[currentQuestionIndex];
-          const correctAnswerText = currentQuestion.options[currentQuestion.correctAnswer];
-          speakDriverResponse(correctAnswerText);
-        }
-      }, 100); // Immediately after officer question
-
-      return () => clearTimeout(timer);
-    }
-  }, [questions, autoPlay, showAnswer, isSpeaking, questionsLoading, currentQuestionIndex, isAudioEnabled]);
+  // Sequential conversation - officer speaks first, then driver responds when officer finishes
+  // No timer needed - driver response is triggered by officer completion
 
   const speakOfficerQuestion = async () => {
     if (!questions || !isAudioEnabled || !questions[currentQuestionIndex]) return;
