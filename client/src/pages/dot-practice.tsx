@@ -161,12 +161,8 @@ export default function DotPractice() {
     if (questions && questions.length > 0 && autoPlay && !showAnswer && !isSpeaking && !questionsLoading) {
       const timer = setTimeout(() => {
         setShowAnswer(true);
-        if (isAudioEnabled && questions[currentQuestionIndex]) {
-          // Play driver response after showing the answer
-          const currentQuestion = questions[currentQuestionIndex];
-          const correctAnswerText = currentQuestion.options[currentQuestion.correctAnswer];
-          setTimeout(() => speakDriverResponse(correctAnswerText), 500);
-        }
+        // Show answer without speaking driver response
+        // Only officer questions are spoken
       }, 2000); // 2 seconds after officer question
 
       return () => clearTimeout(timer);
