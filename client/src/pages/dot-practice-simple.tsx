@@ -1,302 +1,305 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Shield, FileText, TrafficCone, Truck, Package, Volume2, Mic } from "lucide-react";
-import { api } from "@/lib/api";
-import { queryClient } from "@/lib/queryClient";
+import { ArrowLeft, Shield, Volume2, VolumeX, PlayCircle, StopCircle } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-export default function DotPractice() {
+export default function DotPracticeSimple() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userResponse, setUserResponse] = useState<string>("");
   const [showAnswer, setShowAnswer] = useState(false);
-  const [score, setScore] = useState(0);
   const [sessionId, setSessionId] = useState<number | null>(null);
-  
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [conversationState, setConversationState] = useState<'idle' | 'officer-speaking' | 'pause' | 'driver-speaking' | 'waiting'>('idle');
+
   const { toast } = useToast();
 
+  // Fetch categories
   const { data: categories } = useQuery({
-    queryKey: ["/api/dot-categories"],
-    queryFn: api.getDotCategories,
+    queryKey: ['/api/dot-categories'],
   });
 
+  // Fetch questions for selected category
   const { data: questions } = useQuery({
-    queryKey: ["/api/dot-questions", selectedCategory],
-    queryFn: () => api.getDotQuestions(selectedCategory!),
-    enabled: !!selectedCategory,
+    queryKey: ['/api/dot-questions', selectedCategory],
+    enabled: selectedCategory !== null,
   });
 
+  // Create practice session
   const createSessionMutation = useMutation({
-    mutationFn: api.createPracticeSession,
-    onSuccess: (session) => {
-      setSessionId(session.id);
-    },
-  });
-
-  const updateSessionMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: number; updates: any }) =>
-      api.updatePracticeSession(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/practice-sessions"] });
-      toast({
-        title: "Practice Complete!",
-        description: `You completed the practice session.`,
+    mutationFn: async (categoryId: number) => {
+      return await apiRequest('POST', '/api/practice-sessions', {
+        type: 'dot',
+        categoryId: categoryId,
       });
     },
+    onSuccess: (data) => {
+      setSessionId(data.id);
+    },
   });
 
-  const startPractice = (categoryId: number) => {
-    setSelectedCategory(categoryId);
-    setCurrentQuestionIndex(0);
-    setScore(0);
-    setShowAnswer(false);
-    setUserResponse("");
+  // Speech functions
+  const speakText = async (text: string, voice: 'officer' | 'driver' = 'officer') => {
+    try {
+      const response = await fetch('/api/speak-dot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voice }),
+      });
 
-    createSessionMutation.mutate({
-      userId: 1,
-      type: "dot",
-      categoryId,
-      duration: 0,
-      completed: false,
-    });
-  };
+      if (!response.ok) throw new Error('Voice generation failed');
 
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.8;
-      speechSynthesis.speak(utterance);
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+
+      return new Promise<void>((resolve, reject) => {
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          resolve();
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          reject(new Error('Audio playback failed'));
+        };
+        audio.play().catch(reject);
+      });
+    } catch (error) {
+      console.error('Speech error:', error);
+      throw error;
     }
   };
 
-  const handleShowAnswer = () => {
-    setShowAnswer(true);
+  // Simple conversation flow
+  const startConversation = async () => {
+    if (!questions || !questions[currentQuestionIndex]) return;
+
+    setIsPlaying(true);
+    setConversationState('officer-speaking');
+
+    try {
+      const currentQuestion = questions[currentQuestionIndex];
+      
+      // Officer speaks
+      await speakText(currentQuestion.question, 'officer');
+      
+      // Pause
+      setConversationState('pause');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Driver responds
+      setConversationState('driver-speaking');
+      setShowAnswer(true);
+      const correctAnswer = currentQuestion.options[currentQuestion.correctAnswer];
+      await speakText(correctAnswer, 'driver');
+      
+      // Wait before next
+      setConversationState('waiting');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Move to next question
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+        setShowAnswer(false);
+        setConversationState('idle');
+        // Auto-continue
+        setTimeout(() => startConversation(), 1000);
+      } else {
+        // Completed
+        setIsPlaying(false);
+        setConversationState('idle');
+        toast({
+          title: "Practice Complete!",
+          description: `You completed ${questions.length} conversations.`,
+        });
+      }
+    } catch (error) {
+      setIsPlaying(false);
+      setConversationState('idle');
+      toast({
+        title: "Audio Error",
+        description: "Could not play audio. Try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopConversation = () => {
+    setIsPlaying(false);
+    setConversationState('idle');
+  };
+
+  const handleCategorySelect = (categoryId: number) => {
+    setSelectedCategory(categoryId);
+    setCurrentQuestionIndex(0);
+    setShowAnswer(false);
+    createSessionMutation.mutate(categoryId);
   };
 
   const handleNextQuestion = () => {
     if (!questions) return;
-
+    
+    setShowAnswer(false);
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-      setUserResponse("");
-      setShowAnswer(false);
-    } else {
-      // Practice complete
-      if (sessionId) {
-        updateSessionMutation.mutate({
-          id: sessionId,
-          updates: {
-            duration: 5,
-            score: 100,
-            completed: true,
-          },
-        });
-      }
-      
-      setTimeout(() => resetPractice(), 2000);
     }
   };
 
-  const resetPractice = () => {
-    setSelectedCategory(null);
-    setCurrentQuestionIndex(0);
-    setUserResponse("");
+  const handlePrevQuestion = () => {
     setShowAnswer(false);
-    setScore(0);
-    setSessionId(null);
-  };
-
-  const getCategoryIcon = (name: string) => {
-    switch (name.toLowerCase()) {
-      case 'safety regulations':
-        return Shield;
-      case 'documentation':
-        return FileText;
-      case 'road terminology':
-        return TrafficCone;
-      case 'vehicle operations':
-        return Truck;
-      case 'loading & cargo':
-        return Package;
-      default:
-        return Shield;
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
     }
   };
 
-  // Category selection view
+  const progress = questions ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
+
   if (!selectedCategory) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Home</span>
-                </Button>
-              </Link>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">DOT Practice</h1>
+          <div className="flex items-center gap-4 mb-8">
+            <Link to="/">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">DOT Practice</h1>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories?.map((category: any) => {
-              const IconComponent = getCategoryIcon(category.name);
-              return (
-                <Card
-                  key={category.id}
-                  className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-500"
-                  onClick={() => startPractice(category.id)}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className="p-3 rounded-lg bg-blue-100 text-blue-600">
-                        <IconComponent className="h-8 w-8" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{category.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{category.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-gray-500">
-                      <span>20 questions</span>
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                        Start Practice
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {categories?.map((category: any) => (
+              <Card
+                key={category.id}
+                className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-200 dark:hover:border-blue-800"
+                onClick={() => handleCategorySelect(category.id)}
+              >
+                <CardContent className="p-6 text-center">
+                  <Shield className="w-12 h-12 mx-auto mb-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                    {category.name}
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-300 text-sm">
+                    Practice authentic officer conversations
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
     );
   }
 
-  // Practice session view
-  if (questions && questions.length > 0) {
-    const currentQuestion = questions[currentQuestionIndex];
-
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <Button
-              onClick={resetPractice}
-              variant="ghost"
-              size="sm"
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Categories</span>
-            </Button>
-          </div>
-
-          <Card>
-            <CardContent className="p-6">
-              {/* Officer-Driver Conversation Interface */}
-              <div className="space-y-4">
-                {/* Officer Question */}
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">Officer</span>
-                    </div>
-                    <Button
-                      onClick={() => speakText(currentQuestion.question)}
-                      variant="ghost"
-                      size="sm"
-                      className="flex items-center space-x-1"
-                    >
-                      <Volume2 className="h-4 w-4" />
-                      <span className="text-xs">Listen</span>
-                    </Button>
-                  </div>
-                  <p className="text-lg text-gray-800 dark:text-gray-200 font-medium">{currentQuestion.question}</p>
-                </div>
-
-                {/* Driver Response Section */}
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">You</span>
-                    </div>
-                    <span className="font-semibold text-green-700 dark:text-green-300">Your Response:</span>
-                  </div>
-                  
-                  <textarea
-                    value={userResponse}
-                    onChange={(e) => setUserResponse(e.target.value)}
-                    placeholder="Type your response to the officer here..."
-                    className="w-full p-3 border rounded-lg resize-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                    rows={3}
-                  />
-                </div>
-
-                {/* Professional Answer (when shown) */}
-                {showAnswer && (
-                  <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <h4 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">Professional Response:</h4>
-                    <p className="text-gray-800 dark:text-gray-200 italic mb-2">"{currentQuestion.correctAnswer}"</p>
-                    {currentQuestion.explanation && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{currentQuestion.explanation}</p>
-                    )}
-                    <Button
-                      onClick={() => speakText(currentQuestion.correctAnswer)}
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2 flex items-center space-x-1"
-                    >
-                      <Volume2 className="h-4 w-4" />
-                      <span className="text-xs">Listen to Answer</span>
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-center space-x-4 mt-6">
-                {!showAnswer ? (
-                  <Button onClick={handleShowAnswer} className="flex items-center space-x-2">
-                    <span>Show Professional Response</span>
-                  </Button>
-                ) : (
-                  <Button onClick={handleNextQuestion} className="flex items-center space-x-2">
-                    <span>{currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Complete Practice'}</span>
-                    <ArrowLeft className="h-4 w-4 rotate-180" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Progress */}
-              <div className="mt-6 space-y-2">
-                <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
-                  <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
-                </div>
-                
-                <Progress 
-                  value={((currentQuestionIndex + 1) / questions.length) * 100} 
-                  className="w-full" 
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const currentQuestion = questions?.[currentQuestionIndex];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Loading Questions...</h2>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Categories
+          </Button>
+          <div className="flex items-center gap-2">
+            <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+              DOT Practice - {categories?.find(c => c.id === selectedCategory)?.name}
+            </h1>
+          </div>
+        </div>
+
+        {/* Progress */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-slate-600 dark:text-slate-300">
+              Question {currentQuestionIndex + 1} of {questions?.length || 0}
+            </span>
+            <span className="text-sm text-slate-600 dark:text-slate-300">
+              {Math.round(progress)}% Complete
+            </span>
+          </div>
+          <Progress value={progress} className="h-2" />
+        </div>
+
+        {/* Conversation Controls */}
+        <div className="flex gap-4 mb-6 justify-center">
+          {!isPlaying ? (
+            <Button onClick={startConversation} className="flex items-center gap-2">
+              <PlayCircle className="w-5 h-5" />
+              Start Conversation
+            </Button>
+          ) : (
+            <Button onClick={stopConversation} variant="destructive" className="flex items-center gap-2">
+              <StopCircle className="w-5 h-5" />
+              Stop Conversation
+            </Button>
+          )}
+        </div>
+
+        {/* Status */}
+        <div className="text-center mb-6">
+          <div className="text-lg font-medium text-slate-900 dark:text-white">
+            {conversationState === 'idle' && 'Ready to start conversation'}
+            {conversationState === 'officer-speaking' && '🚔 Officer speaking...'}
+            {conversationState === 'pause' && '⏸️ Processing...'}
+            {conversationState === 'driver-speaking' && '🚛 Driver responding...'}
+            {conversationState === 'waiting' && '⏳ Next question coming...'}
+          </div>
+        </div>
+
+        {/* Question */}
+        {currentQuestion && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                  Officer Question:
+                </h3>
+                <p className="text-slate-700 dark:text-slate-300 text-lg">
+                  {currentQuestion.question}
+                </p>
+              </div>
+
+              {showAnswer && (
+                <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <h4 className="text-md font-semibold text-green-800 dark:text-green-200 mb-2">
+                    Professional Driver Response:
+                  </h4>
+                  <p className="text-green-700 dark:text-green-300">
+                    {currentQuestion.options[currentQuestion.correctAnswer]}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Manual Navigation */}
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            onClick={handlePrevQuestion}
+            disabled={currentQuestionIndex === 0 || isPlaying}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleNextQuestion}
+            disabled={!questions || currentQuestionIndex === questions.length - 1 || isPlaying}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );

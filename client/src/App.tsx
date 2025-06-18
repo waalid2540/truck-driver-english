@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Home from "@/pages/home";
-import DotPractice from "@/pages/dot-practice";
+import DotPracticeSimple from "@/pages/dot-practice-simple";
 import ConversationalCoach from "@/pages/conversational-coach";
 import Settings from "@/pages/settings";
 import Subscribe from "@/pages/subscribe";
@@ -62,7 +62,7 @@ function Router() {
     <div className="max-w-md mx-auto bg-card min-h-screen shadow-lg relative border-l border-r border-border">
       <Switch>
         <Route path="/" component={Home} />
-        <Route path="/dot-practice" component={DotPractice} />
+        <Route path="/dot-practice" component={DotPracticeSimple} />
         <Route path="/coach" component={ConversationalCoach} />
         <Route path="/settings" component={Settings} />
         <Route path="/subscribe" component={Subscribe} />
