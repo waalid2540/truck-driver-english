@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { generateConversationResponse, generatePracticeScenario } from "./services/openai";
 import { transcribeAudio, generateSpeech } from "./services/whisper";
 import { generateDOTSpeech } from "./services/gtts-service";
-import { generateDOTSpeechElevenLabs } from "./services/elevenlabs-service";
+import { generateDOTSpeechElevenLabs, AVAILABLE_VOICES } from "./services/elevenlabs-service";
 import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -202,10 +202,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // DOT practice voice endpoint with ElevenLabs premium quality
+  // Get available voices endpoint
+  app.get("/api/voices", (req, res) => {
+    res.json(AVAILABLE_VOICES);
+  });
+
+  // DOT practice voice endpoint with voice selection support
   app.post("/api/speak-dot", async (req, res) => {
     try {
-      const { text, voice } = req.body;
+      const { text, voice, voiceId } = req.body;
       if (!text) {
         return res.status(400).json({ message: "No text provided" });
       }
@@ -213,8 +218,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voiceType = voice === 'driver' ? 'driver' : 'officer';
       
       try {
-        // Try ElevenLabs first for premium quality
-        const audioBuffer = await generateDOTSpeechElevenLabs(text, voiceType);
+        // Try ElevenLabs first for premium quality with custom voice
+        const audioBuffer = await generateDOTSpeechElevenLabs(text, voiceType, voiceId);
         
         res.set({
           'Content-Type': 'audio/mpeg',

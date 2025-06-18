@@ -4,9 +4,31 @@ export interface ElevenLabsResponse {
   error?: string;
 }
 
+export interface VoiceOption {
+  id: string;
+  name: string;
+  description: string;
+  category: 'officer' | 'driver';
+}
+
+export const AVAILABLE_VOICES: VoiceOption[] = [
+  // Officer voices - authoritative, professional
+  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam', description: 'Deep, authoritative male voice', category: 'officer' },
+  { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold', description: 'Strong, commanding male voice', category: 'officer' },
+  { id: '29vD33N1CtxCmqQRPOHJ', name: 'Drew', description: 'Professional, clear male voice', category: 'officer' },
+  { id: 'CYw3kZ02Hs0563khs1Fj', name: 'Dave', description: 'Calm, steady male voice', category: 'officer' },
+  
+  // Driver voices - respectful, clear
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sam', description: 'Professional, clear male voice', category: 'driver' },
+  { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni', description: 'Friendly, respectful male voice', category: 'driver' },
+  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie', description: 'Warm, conversational male voice', category: 'driver' },
+  { id: 'bIHbv24MWmeRgasZH58o', name: 'Will', description: 'Polite, articulate male voice', category: 'driver' },
+];
+
 export async function generateElevenLabsSpeech(
   text: string, 
-  voice: 'officer' | 'driver' = 'officer'
+  voice: 'officer' | 'driver' = 'officer',
+  voiceId?: string
 ): Promise<ElevenLabsResponse> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   
@@ -19,13 +41,21 @@ export async function generateElevenLabsSpeech(
   }
 
   try {
-    // Premium male voices optimized for DOT practice
-    const voiceIds = {
-      officer: 'pNInz6obpgDQGcFmaJgB', // Adam - deep, authoritative male voice
-      driver: 'EXAVITQu4vr4xnSDxMaL', // Sam - professional, clear male voice
-    };
+    // Use custom voice ID or default voices
+    let selectedVoiceId: string;
     
-    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceIds[voice]}`;
+    if (voiceId) {
+      selectedVoiceId = voiceId;
+    } else {
+      // Default voices
+      const defaultVoices = {
+        officer: 'pNInz6obpgDQGcFmaJgB', // Adam - deep, authoritative
+        driver: 'EXAVITQu4vr4xnSDxMaL', // Sam - professional, clear
+      };
+      selectedVoiceId = defaultVoices[voice];
+    }
+    
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`;
     
     const response = await fetch(url, {
       method: 'POST',
@@ -70,9 +100,10 @@ export async function generateElevenLabsSpeech(
 
 export async function generateDOTSpeechElevenLabs(
   text: string, 
-  voice: 'officer' | 'driver' = 'officer'
+  voice: 'officer' | 'driver' = 'officer',
+  voiceId?: string
 ): Promise<Buffer> {
-  const result = await generateElevenLabsSpeech(text, voice);
+  const result = await generateElevenLabsSpeech(text, voice, voiceId);
   
   if (!result.success) {
     throw new Error(`ElevenLabs generation failed: ${result.error}`);
