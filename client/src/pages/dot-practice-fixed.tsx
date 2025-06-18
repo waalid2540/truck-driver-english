@@ -92,7 +92,7 @@ export default function DotPracticeFixed() {
     setSelectedCategory(categoryId);
     setCurrentQuestionIndex(0);
     setShowAnswer(false);
-    createSessionMutation.mutate(categoryId);
+    // Skip session creation for now, just load questions
   };
 
   const handleNextQuestion = () => {
@@ -132,42 +132,14 @@ export default function DotPracticeFixed() {
 
   const progress = questions && questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
 
+  // Auto-load your authentic questions directly
   if (!selectedCategory) {
+    handleCategorySelect(6); // Go straight to your 218 authentic questions
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-8">
-            <Link to="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">DOT Practice</h1>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {categories?.map((category: any) => (
-              <Card
-                key={category.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-200 dark:hover:border-blue-800"
-                onClick={() => handleCategorySelect(category.id)}
-              >
-                <CardContent className="p-6 text-center">
-                  <Shield className="w-12 h-12 mx-auto mb-4 text-blue-600 dark:text-blue-400" />
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                    {category.name}
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-300 text-sm">
-                    Practice authentic officer conversations
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-12 h-12 mx-auto mb-4 text-blue-600 dark:text-blue-400 animate-pulse" />
+          <p className="text-slate-600 dark:text-slate-300">Loading your authentic officer-driver questions...</p>
         </div>
       </div>
     );
@@ -179,14 +151,16 @@ export default function DotPracticeFixed() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Categories
-          </Button>
+          <Link to="/">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Home
+            </Button>
+          </Link>
           <div className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-              DOT Practice - {categories?.find(c => c.id === selectedCategory)?.name}
+              Your Authentic Officer-Driver Questions ({questions?.length || 0})
             </h1>
           </div>
         </div>
