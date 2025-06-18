@@ -100,6 +100,7 @@ The application is designed as a mobile-first progressive web app with a maximum
 - June 17, 2025: Optimized audio processing for clarity: reduced to 1400% gain with speech enhancement, noise reduction, and gentle compression for clear, loud mobile audio
 - June 17, 2025: Integrated ElevenLabs API support for premium voice quality with GTTS fallback system
 - June 18, 2025: Created comprehensive voice selection interface with 8 professional male voices (4 officer, 4 driver) - users can now choose from Adam, Arnold, Drew, Dave for officers and Sam, Antoni, Charlie, Will for drivers with real-time voice previews
+- June 18, 2025: Updated voice selector to accept custom ElevenLabs voice IDs - users can now input any voice ID from their ElevenLabs account for complete personalization with testing functionality
 
 ## User Preferences
 
@@ -107,3 +108,4 @@ Preferred communication style: Simple, everyday language.
 Design preference: Dark mode enabled by default for better visibility while driving.
 Voice preference: Professional GTTS voices for authentic DOT practice scenarios.
 User feedback: "The app is amazing" - successful implementation of hands-free DOT practice system.
+User feedback: "Voice selection is now working" - confirmed successful implementation of ElevenLabs voice selection with 8 professional male voices.
