@@ -36,8 +36,8 @@ export default function DotPractice() {
   
   // Voice selection
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
-  const [selectedOfficerVoice, setSelectedOfficerVoice] = useState<string>('pNInz6obpgDQGcFmaJgB'); // Adam default
-  const [selectedDriverVoice, setSelectedDriverVoice] = useState<string>('EXAVITQu4vr4xnSDxMaL'); // Sam default
+  const [selectedOfficerVoice, setSelectedOfficerVoice] = useState<string>(''); // No default - uses GTTS
+  const [selectedDriverVoice, setSelectedDriverVoice] = useState<string>(''); // No default - uses GTTS
   
   const { toast } = useToast();
 
