@@ -7,8 +7,14 @@ import { transcribeAudio, generateSpeech } from "./services/whisper";
 import { generateDOTSpeech } from "./services/gtts-service";
 import { generateDOTSpeechElevenLabs, AVAILABLE_VOICES } from "./services/elevenlabs-service";
 import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware
+  await setupAuth(app);
+  
+  // Seed initial data
+  await storage.seedInitialData();
   // Configure multer for audio file uploads
   const upload = multer({
     storage: multer.memoryStorage(),
@@ -24,9 +30,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   });
   // User routes
+  // Auth routes for authenticated users
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Legacy user routes (for compatibility with existing frontend)
   app.get("/api/user/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id;
       const user = await storage.getUser(id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -39,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/user/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id;
       const updatedUser = await storage.updateUser(id, req.body);
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });

@@ -51,7 +51,7 @@ export const dotQuestions = pgTable("dot_questions", {
   categoryId: integer("category_id").notNull(),
   question: text("question").notNull(),
   options: jsonb("options").notNull(),
-  correctAnswer: text("correct_answer").notNull(),
+  correctAnswer: integer("correct_answer").notNull(),
   explanation: text("explanation"),
 });
 
