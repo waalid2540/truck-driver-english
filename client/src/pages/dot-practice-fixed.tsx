@@ -26,7 +26,7 @@ export default function DotPracticeFixed() {
 
   // Fetch questions for selected category
   const { data: questions } = useQuery<DotQuestion[]>({
-    queryKey: ['/api/dot-questions', selectedCategory],
+    queryKey: [`/api/dot-questions/${selectedCategory}`],
     enabled: selectedCategory !== null,
   });
 
@@ -134,7 +134,11 @@ export default function DotPracticeFixed() {
 
   // Auto-load your authentic questions directly
   if (!selectedCategory) {
-    handleCategorySelect(6); // Go straight to your 218 authentic questions
+    setSelectedCategory(6); // Set category directly without calling function
+  }
+
+  // Show loading while questions are fetching
+  if (selectedCategory && !questions) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4 flex items-center justify-center">
         <div className="text-center">
