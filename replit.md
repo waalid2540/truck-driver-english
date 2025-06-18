@@ -126,6 +126,7 @@ The application is designed as a mobile-first progressive web app with a maximum
 - June 18, 2025: Restored complete voice over conversation - both officer questions AND driver responses now use professional male voices for full audio dialogue experience
 - June 18, 2025: Created continuous professional conversation flow - officer questions immediately followed by driver professional responses with no user interaction or delays between
 - June 18, 2025: Fixed simultaneous voice issue - now sequential conversation with officer speaking first, then driver responding when officer finishes to prevent API overload
+- June 18, 2025: Reduced voice speech rates to 0.5 for both officer and driver voices - much slower, clearer speech for improved English learning comprehension
 
 ## User Preferences
 

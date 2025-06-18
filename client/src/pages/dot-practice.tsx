@@ -306,7 +306,7 @@ export default function DotPractice() {
       }
       
       const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
-      utterance.rate = 0.8;  // Slightly slow but clear speech
+      utterance.rate = 0.5;  // Much slower speech for better learning
       utterance.pitch = 0.7;
       utterance.volume = 1.0;
       utterance.lang = 'en-US';
@@ -482,7 +482,7 @@ export default function DotPractice() {
       synthRef.current.cancel();
       
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.8;
+      utterance.rate = 0.5;
       utterance.pitch = 0.8;
       utterance.volume = 1.0;
       utterance.lang = 'en-US';
