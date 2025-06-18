@@ -34,12 +34,37 @@ export default function DotPractice() {
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const audioCache = useRef<Map<string, string>>(new Map());
   
-  // Voice selection
+  // Voice selection with persistent storage
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
-  const [selectedOfficerVoice, setSelectedOfficerVoice] = useState<string>(''); // No default - uses GTTS
-  const [selectedDriverVoice, setSelectedDriverVoice] = useState<string>(''); // No default - uses GTTS
+  const [selectedOfficerVoice, setSelectedOfficerVoice] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dotPracticeOfficerVoice') || '';
+    }
+    return '';
+  });
+  const [selectedDriverVoice, setSelectedDriverVoice] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dotPracticeDriverVoice') || '';
+    }
+    return '';
+  });
   
   const { toast } = useToast();
+
+  // Voice preference handlers with persistence
+  const handleOfficerVoiceChange = (voice: string) => {
+    setSelectedOfficerVoice(voice);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dotPracticeOfficerVoice', voice);
+    }
+  };
+
+  const handleDriverVoiceChange = (voice: string) => {
+    setSelectedDriverVoice(voice);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dotPracticeDriverVoice', voice);
+    }
+  };
 
   // Initialize speech recognition and synthesis with mobile optimization
   useEffect(() => {
