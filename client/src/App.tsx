@@ -9,19 +9,17 @@ import DotPractice from "@/pages/dot-practice";
 import ConversationalCoach from "@/pages/conversational-coach";
 import Settings from "@/pages/settings";
 import Subscribe from "@/pages/subscribe";
-import Landing from "@/pages/landing";
+import Login from "@/pages/login";
+import Signup from "@/pages/signup";
 import BottomNavigation from "@/components/bottom-navigation";
 import NotFound from "@/pages/not-found";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
-  // For now, skip authentication check to fix the login loop
-  // Users can access the app directly while we resolve the OAuth issue
-  const showApp = true; // Will be changed back to isAuthenticated once OAuth is fixed
-
-  if (isLoading && isAuthenticated !== undefined) {
+  if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-card min-h-screen shadow-lg relative border-l border-r border-border flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
@@ -29,8 +27,27 @@ function Router() {
     );
   }
 
-  if (!showApp) {
-    return <Landing />;
+  if (!isAuthenticated) {
+    const handleAuthSuccess = (user: any) => {
+      // Force a page refresh to reload with authenticated user
+      window.location.reload();
+    };
+
+    if (authMode === 'signup') {
+      return (
+        <Signup
+          onSuccess={handleAuthSuccess}
+          onSwitchToLogin={() => setAuthMode('login')}
+        />
+      );
+    }
+
+    return (
+      <Login
+        onSuccess={handleAuthSuccess}
+        onSwitchToSignup={() => setAuthMode('signup')}
+      />
+    );
   }
 
   return (

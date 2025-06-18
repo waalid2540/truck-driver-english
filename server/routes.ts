@@ -43,15 +43,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   });
   // User routes
-  // Auth routes for authenticated users
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Simple authentication routes
+  app.post('/api/auth/register', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const { name, email, password, experienceLevel } = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Create new user with unique ID
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const user = await storage.upsertUser({
+        id: userId,
+        email,
+        name,
+        experienceLevel: experienceLevel || 'intermediate',
+        dailyReminders: true,
+        voicePractice: true,
+        sessionDuration: 15,
+        darkMode: false,
+      });
+
+      // Generate simple token
+      const token = `token_${userId}_${Date.now()}`;
+      
+      res.json({
+        ...user,
+        token,
+        message: "Account created successfully"
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Failed to create account" });
+    }
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // For demo purposes, accept any password
+      // In production, you'd verify against hashed password
+      
+      // Generate simple token
+      const token = `token_${user.id}_${Date.now()}`;
+      
+      res.json({
+        ...user,
+        token,
+        message: "Logged in successfully"
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Failed to log in" });
+    }
+  });
+
+  app.get('/api/auth/user', async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token || !token.startsWith('token_')) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Extract user ID from token
+      const userId = token.split('_')[1];
       const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      res.status(401).json({ message: "Unauthorized" });
     }
   });
 
