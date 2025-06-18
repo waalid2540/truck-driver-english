@@ -254,7 +254,18 @@ export default function DotPractice() {
           URL.revokeObjectURL(audioUrl);
         };
         
-        await audio.play();
+        // Force audio to play on mobile devices
+        audio.muted = false;
+        audio.preload = 'auto';
+        try {
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            await playPromise;
+          }
+        } catch (playError) {
+          console.log('Officer voice play failed:', playError);
+          setIsSpeaking(false);
+        }
         return;
       }
     } catch (error) {
@@ -301,17 +312,32 @@ export default function DotPractice() {
         console.log('No suitable male voice found, using default');
       }
       
+      utterance.onstart = () => {
+        console.log('Speech synthesis started');
+      };
+      
       utterance.onend = () => {
+        console.log('Speech synthesis ended');
         setIsSpeaking(false);
         if (isAudioEnabled && !userResponse) {
           setTimeout(() => startListening(), 500);
         }
       };
       
-      utterance.onerror = () => {
+      utterance.onerror = (event) => {
+        console.log('Speech synthesis error:', event.error);
         setIsSpeaking(false);
       };
       
+      // Force speech synthesis to work
+      if (synthRef.current.paused) {
+        synthRef.current.resume();
+      }
+      if (synthRef.current.pending) {
+        synthRef.current.cancel();
+      }
+      
+      console.log('Starting speech synthesis for officer');
       synthRef.current.speak(utterance);
     } else {
       setIsSpeaking(false);
@@ -425,7 +451,18 @@ export default function DotPractice() {
           URL.revokeObjectURL(audioUrl);
         };
         
-        await audio.play();
+        // Force audio to play on mobile devices
+        audio.muted = false;
+        audio.preload = 'auto';
+        try {
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            await playPromise;
+          }
+        } catch (playError) {
+          console.log('Driver voice play failed:', playError);
+          setIsSpeaking(false);
+        }
         return;
       }
     } catch (error) {
@@ -893,7 +930,7 @@ export default function DotPractice() {
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-semibold text-yellow-800 dark:text-yellow-300">Professional Response:</h4>
                       <Button
-                        onClick={() => speakDriverResponse(currentQuestion.options[currentQuestion.correctAnswer])}
+                        onClick={() => speakDriverResponse(questions[currentQuestionIndex]?.options[questions[currentQuestionIndex]?.correctAnswer] || '')}
                         disabled={isSpeaking}
                         variant="ghost"
                         size="sm"
@@ -903,7 +940,7 @@ export default function DotPractice() {
                         <span className="text-xs">Listen</span>
                       </Button>
                     </div>
-                    <p className="text-gray-800 dark:text-gray-200 italic mb-2">"{currentQuestion.options[currentQuestion.correctAnswer]}"</p>
+                    <p className="text-gray-800 dark:text-gray-200 italic mb-2 text-lg font-medium">"{questions[currentQuestionIndex]?.options[questions[currentQuestionIndex]?.correctAnswer] || 'Loading response...'}"</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{currentQuestion.explanation}</p>
                   </div>
                 )}
