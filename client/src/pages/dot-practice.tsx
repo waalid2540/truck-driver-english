@@ -274,12 +274,15 @@ export default function DotPractice() {
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
-          // Immediately show answer and play driver response
+          // Show answer and play driver response after officer finishes
           if (autoPlay && questions[currentQuestionIndex]) {
             setShowAnswer(true);
-            const currentQuestion = questions[currentQuestionIndex];
-            const correctAnswerText = currentQuestion.options[currentQuestion.correctAnswer];
-            speakDriverResponse(correctAnswerText);
+            // Small delay to let officer voice complete fully before driver responds
+            setTimeout(() => {
+              const currentQuestion = questions[currentQuestionIndex];
+              const correctAnswerText = currentQuestion.options[currentQuestion.correctAnswer];
+              speakDriverResponse(correctAnswerText);
+            }, 500); // Half second pause between officer and driver
           }
         };
         
@@ -489,9 +492,11 @@ export default function DotPractice() {
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
-          // Move to next question after driver speaks
+          // Move to next question after driver speaks with proper pause
           if (autoPlay && questions) {
-            handleNextQuestion();
+            setTimeout(() => {
+              handleNextQuestion();
+            }, 1000); // 1 second pause between driver response and next officer question
           }
         };
         
