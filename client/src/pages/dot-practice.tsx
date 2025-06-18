@@ -313,7 +313,7 @@ export default function DotPractice() {
       }
       
       const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
-      utterance.rate = 0.2;  // Extremely slow speech for new English learners
+      utterance.rate = 0.1;  // Ultra slow speech for new English learners
       utterance.pitch = 0.7;
       utterance.volume = 1.0;
       utterance.lang = 'en-US';
@@ -542,7 +542,7 @@ export default function DotPractice() {
       }
       
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.2;  // Extremely slow speech for new English learners
+      utterance.rate = 0.1;  // Ultra slow speech for new English learners
       utterance.pitch = 0.8;
       utterance.volume = 1.0;
       utterance.lang = 'en-US';
