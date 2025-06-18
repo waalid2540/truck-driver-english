@@ -166,34 +166,51 @@ export default function DotPractice() {
         const audio = new Audio(audioUrl);
         audio.volume = 1.0;
         
-        // Maximum mobile volume boost with Web Audio API
+        // Extreme mobile volume amplification system
         try {
           const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
           const source = audioContext.createMediaElementSource(audio);
-          const gainNode = audioContext.createGain();
+          
+          // Multi-stage gain amplification
+          const preGain = audioContext.createGain();
+          const mainGain = audioContext.createGain();
+          const postGain = audioContext.createGain();
+          
+          // Triple gain staging for maximum amplification
+          preGain.gain.value = 10.0;   // 1000% pre-amplification
+          mainGain.gain.value = 5.0;   // 500% main amplification
+          postGain.gain.value = 2.0;   // 200% post-amplification
+          
+          // Aggressive limiter to prevent distortion
           const compressor = audioContext.createDynamicsCompressor();
-          
-          // Extreme gain boost for mobile devices
-          gainNode.gain.value = 8.0; // 800% volume boost
-          
-          // Aggressive compressor for maximum perceived loudness
-          compressor.threshold.value = -20;
-          compressor.knee.value = 40;
+          compressor.threshold.value = -10;
+          compressor.knee.value = 0;
           compressor.ratio.value = 20;
           compressor.attack.value = 0.001;
-          compressor.release.value = 0.1;
+          compressor.release.value = 0.01;
           
-          // Connect: source -> gain -> compressor -> output
-          source.connect(gainNode);
-          gainNode.connect(compressor);
+          // High-frequency enhancer for clarity
+          const filter = audioContext.createBiquadFilter();
+          filter.type = 'highshelf';
+          filter.frequency.value = 2000;
+          filter.gain.value = 12;
+          
+          // Connect multi-stage amplification chain
+          source.connect(preGain);
+          preGain.connect(mainGain);
+          mainGain.connect(postGain);
+          postGain.connect(filter);
+          filter.connect(compressor);
           compressor.connect(audioContext.destination);
           
-          // Force audio context activation
+          // Force maximum mobile audio activation
           if (audioContext.state === 'suspended') {
             audioContext.resume();
           }
+          
+          console.log('Applied extreme mobile amplification: 10000% total gain boost');
         } catch (error) {
-          console.log('Mobile volume boost unavailable:', error);
+          console.log('Advanced mobile amplification unavailable:', error);
         }
         
         audio.onended = () => {
@@ -299,34 +316,51 @@ export default function DotPractice() {
         const audio = new Audio(audioUrl);
         audio.volume = 1.0;
         
-        // Maximum mobile volume boost with Web Audio API for driver
+        // Extreme mobile volume amplification system for driver
         try {
           const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
           const source = audioContext.createMediaElementSource(audio);
-          const gainNode = audioContext.createGain();
+          
+          // Multi-stage gain amplification
+          const preGain = audioContext.createGain();
+          const mainGain = audioContext.createGain();
+          const postGain = audioContext.createGain();
+          
+          // Triple gain staging for maximum amplification
+          preGain.gain.value = 10.0;   // 1000% pre-amplification
+          mainGain.gain.value = 5.0;   // 500% main amplification
+          postGain.gain.value = 2.0;   // 200% post-amplification
+          
+          // Aggressive limiter to prevent distortion
           const compressor = audioContext.createDynamicsCompressor();
-          
-          // Extreme gain boost for mobile devices
-          gainNode.gain.value = 8.0; // 800% volume boost
-          
-          // Aggressive compressor for maximum perceived loudness
-          compressor.threshold.value = -20;
-          compressor.knee.value = 40;
+          compressor.threshold.value = -10;
+          compressor.knee.value = 0;
           compressor.ratio.value = 20;
           compressor.attack.value = 0.001;
-          compressor.release.value = 0.1;
+          compressor.release.value = 0.01;
           
-          // Connect: source -> gain -> compressor -> output
-          source.connect(gainNode);
-          gainNode.connect(compressor);
+          // High-frequency enhancer for clarity
+          const filter = audioContext.createBiquadFilter();
+          filter.type = 'highshelf';
+          filter.frequency.value = 2000;
+          filter.gain.value = 12;
+          
+          // Connect multi-stage amplification chain
+          source.connect(preGain);
+          preGain.connect(mainGain);
+          mainGain.connect(postGain);
+          postGain.connect(filter);
+          filter.connect(compressor);
           compressor.connect(audioContext.destination);
           
-          // Force audio context activation
+          // Force maximum mobile audio activation
           if (audioContext.state === 'suspended') {
             audioContext.resume();
           }
+          
+          console.log('Applied extreme driver mobile amplification: 10000% total gain boost');
         } catch (error) {
-          console.log('Mobile driver volume boost unavailable:', error);
+          console.log('Advanced driver mobile amplification unavailable:', error);
         }
         
         audio.onended = () => {
