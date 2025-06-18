@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import DotPractice from "@/pages/dot-practice";
 import ConversationalCoach from "@/pages/conversational-coach";
 import Settings from "@/pages/settings";
+import Subscribe from "@/pages/subscribe";
 import Landing from "@/pages/landing";
 import BottomNavigation from "@/components/bottom-navigation";
 import NotFound from "@/pages/not-found";
@@ -35,6 +36,7 @@ function Router() {
         <Route path="/dot-practice" component={DotPractice} />
         <Route path="/coach" component={ConversationalCoach} />
         <Route path="/settings" component={Settings} />
+        <Route path="/subscribe" component={Subscribe} />
         <Route component={NotFound} />
       </Switch>
       <BottomNavigation />

@@ -1,29 +1,41 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, LogOut, Crown, User } from "lucide-react";
 import { api } from "@/lib/api";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Settings() {
   const { toast } = useToast();
+  const { user: authUser, isAuthenticated } = useAuth();
   
   const { data: user, isLoading } = useQuery({
-    queryKey: ["/api/user/1"],
-    queryFn: () => api.getUser(1),
+    queryKey: ["/api/auth/user"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: subscription } = useQuery({
+    queryKey: ["/api/subscription-status"],
+    enabled: isAuthenticated,
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: (updates: any) => api.updateUser(1, updates),
+    mutationFn: (updates: any) => {
+      if (user?.id) {
+        return apiRequest("PATCH", `/api/user/${user.id}`, updates);
+      }
+      throw new Error("User not found");
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user/1"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Settings Updated",
         description: "Your settings have been saved successfully.",
