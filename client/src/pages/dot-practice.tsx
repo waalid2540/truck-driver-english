@@ -4,10 +4,11 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Shield, Volume2, VolumeX, Mic, MicOff, PlayCircle, StopCircle } from "lucide-react";
+import { ArrowLeft, Shield, Volume2, VolumeX, Mic, MicOff, PlayCircle, StopCircle, Settings } from "lucide-react";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import VoiceSelector from "@/components/voice-selector";
 
 // Extend Window interface for speech recognition
 declare global {
@@ -32,6 +33,11 @@ export default function DotPractice() {
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const audioCache = useRef<Map<string, string>>(new Map());
+  
+  // Voice selection
+  const [showVoiceSelector, setShowVoiceSelector] = useState(false);
+  const [selectedOfficerVoice, setSelectedOfficerVoice] = useState<string>('pNInz6obpgDQGcFmaJgB'); // Adam default
+  const [selectedDriverVoice, setSelectedDriverVoice] = useState<string>('EXAVITQu4vr4xnSDxMaL'); // Sam default
   
   const { toast } = useToast();
 
@@ -155,7 +161,8 @@ export default function DotPractice() {
         },
         body: JSON.stringify({
           text: currentQuestion.question,
-          voice: 'officer'
+          voice: 'officer',
+          voiceId: selectedOfficerVoice
         }),
       });
 
@@ -310,7 +317,8 @@ export default function DotPractice() {
         },
         body: JSON.stringify({
           text: text,
-          voice: 'driver'
+          voice: 'driver',
+          voiceId: selectedDriverVoice
         }),
       });
 
@@ -591,6 +599,15 @@ export default function DotPractice() {
             {/* Audio Controls */}
             <div className="flex items-center space-x-2">
               <Button
+                onClick={() => setShowVoiceSelector(true)}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Settings className="h-4 w-4" />
+                <span>Voices</span>
+              </Button>
+              <Button
                 onClick={() => setAutoPlay(!autoPlay)}
                 variant={autoPlay ? "default" : "outline"}
                 size="sm"
@@ -694,6 +711,15 @@ export default function DotPractice() {
 
             {/* Audio Controls */}
             <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => setShowVoiceSelector(true)}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Settings className="h-4 w-4" />
+                <span>Voices</span>
+              </Button>
               <Button
                 onClick={() => setAutoPlay(!autoPlay)}
                 variant={autoPlay ? "default" : "outline"}
@@ -891,6 +917,16 @@ export default function DotPractice() {
           Back to Categories
         </Button>
       </div>
+      
+      {/* Voice Selector Modal */}
+      <VoiceSelector
+        selectedOfficerVoice={selectedOfficerVoice}
+        selectedDriverVoice={selectedDriverVoice}
+        onOfficerVoiceChange={setSelectedOfficerVoice}
+        onDriverVoiceChange={setSelectedDriverVoice}
+        isOpen={showVoiceSelector}
+        onClose={() => setShowVoiceSelector(false)}
+      />
     </div>
   );
 }
