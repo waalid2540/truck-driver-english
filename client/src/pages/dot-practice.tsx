@@ -146,8 +146,46 @@ export default function DotPractice() {
     const currentQuestion = questions[currentQuestionIndex];
     setIsSpeaking(true);
 
-    // Skip GTTS for now and use browser synthesis with forced male voices
-    console.log('Using browser synthesis for guaranteed male voice control');
+    try {
+      // Use GTTS for professional voice quality
+      const response = await fetch('/api/speak-dot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: currentQuestion.question,
+          voice: 'officer'
+        }),
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audio = new Audio(audioUrl);
+        audio.volume = 1.0;
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          // Auto-start listening after officer speaks
+          if (isAudioEnabled && !userResponse) {
+            setTimeout(() => startListening(), 500);
+          }
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+        return;
+      }
+    } catch (error) {
+      console.log('GTTS not available, using browser synthesis fallback');
+    }
 
     // Fallback to browser synthesis
     if (synthRef.current) {
@@ -211,8 +249,48 @@ export default function DotPractice() {
     
     setIsSpeaking(true);
 
-    // Skip GTTS for now and use browser synthesis with forced male voices
-    console.log('Using browser synthesis for guaranteed male driver voice control');
+    try {
+      // Use GTTS for professional driver voice quality
+      const response = await fetch('/api/speak-dot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text,
+          voice: 'driver'
+        }),
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audio = new Audio(audioUrl);
+        audio.volume = 1.0;
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          // Auto-advance to next question after driver response is spoken
+          if (autoPlay && questions) {
+            setTimeout(() => {
+              handleNextQuestion();
+            }, 500);
+          }
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+        return;
+      }
+    } catch (error) {
+      console.log('GTTS not available for driver, using browser synthesis fallback');
+    }
 
     // Fallback to browser synthesis
     if (synthRef.current) {
