@@ -802,8 +802,8 @@ export default function DotPractice() {
         <VoiceSelector
           selectedOfficerVoice={selectedOfficerVoice}
           selectedDriverVoice={selectedDriverVoice}
-          onOfficerVoiceChange={setSelectedOfficerVoice}
-          onDriverVoiceChange={setSelectedDriverVoice}
+          onOfficerVoiceChange={handleOfficerVoiceChange}
+          onDriverVoiceChange={handleDriverVoiceChange}
           isOpen={showVoiceSelector}
           onClose={() => setShowVoiceSelector(false)}
         />
@@ -1041,8 +1041,8 @@ export default function DotPractice() {
         <VoiceSelector
           selectedOfficerVoice={selectedOfficerVoice}
           selectedDriverVoice={selectedDriverVoice}
-          onOfficerVoiceChange={setSelectedOfficerVoice}
-          onDriverVoiceChange={setSelectedDriverVoice}
+          onOfficerVoiceChange={handleOfficerVoiceChange}
+          onDriverVoiceChange={handleDriverVoiceChange}
           isOpen={showVoiceSelector}
           onClose={() => setShowVoiceSelector(false)}
         />

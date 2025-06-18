@@ -112,6 +112,7 @@ The application is designed as a mobile-first progressive web app with a maximum
 - June 18, 2025: Successfully completed loading all 200 authentic officer-driver conversations with proper multiple choice format and professional driver responses as correct answers - dataset now contains realistic alternative responses for comprehensive practice
 - June 18, 2025: Fixed voice generation bug and restored user's exact original dataset of 198 authentic officer-driver conversations from attached file - voice system now working correctly with proper text instead of index numbers
 - June 18, 2025: Removed "Officer:" prefix from all 210 questions to eliminate confusion - voice now speaks questions naturally without role identification
+- June 18, 2025: Implemented voice selection persistence using localStorage - user voice preferences now permanently saved across logout/login sessions
 
 ## User Preferences
 
