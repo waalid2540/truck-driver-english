@@ -99,6 +99,7 @@ The application is designed as a mobile-first progressive web app with a maximum
 - June 17, 2025: Enhanced to multi-stage amplification system with 10,000% total gain boost, high-frequency enhancement, and aggressive limiting for maximum mobile volume
 - June 17, 2025: Optimized audio processing for clarity: reduced to 1400% gain with speech enhancement, noise reduction, and gentle compression for clear, loud mobile audio
 - June 17, 2025: Integrated ElevenLabs API support for premium voice quality with GTTS fallback system
+- June 18, 2025: Created comprehensive voice selection interface with 8 professional male voices (4 officer, 4 driver) - users can now choose from Adam, Arnold, Drew, Dave for officers and Sam, Antoni, Charlie, Will for drivers with real-time voice previews
 
 ## User Preferences
 
