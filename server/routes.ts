@@ -202,9 +202,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get available voices endpoint
-  app.get("/api/voices", (req, res) => {
-    res.json(AVAILABLE_VOICES);
+  // Get available voices from ElevenLabs account
+  app.get("/api/voices", async (req, res) => {
+    try {
+      const apiKey = process.env.ELEVENLABS_API_KEY;
+      
+      if (!apiKey) {
+        // Return predefined voices if no API key
+        return res.json(AVAILABLE_VOICES);
+      }
+
+      // Fetch user's actual voices from ElevenLabs
+      const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+        headers: {
+          'xi-api-key': apiKey
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const voices = data.voices.map((voice: any) => ({
+          id: voice.voice_id,
+          name: voice.name,
+          description: voice.description || `${voice.name} voice`,
+          category: 'general', // User can categorize manually
+          preview_url: voice.preview_url
+        }));
+        
+        console.log(`Fetched ${voices.length} voices from ElevenLabs account`);
+        res.json(voices);
+      } else {
+        const errorText = await response.text();
+        console.log('ElevenLabs voices fetch failed:', response.status, errorText);
+        res.json(AVAILABLE_VOICES);
+      }
+    } catch (error) {
+      console.error('Error fetching ElevenLabs voices:', error);
+      res.json(AVAILABLE_VOICES);
+    }
   });
 
   // DOT practice voice endpoint with voice selection support

@@ -33,11 +33,33 @@ export default function VoiceSelector({
   const [officerVoiceId, setOfficerVoiceId] = useState(selectedOfficerVoice || '');
   const [driverVoiceId, setDriverVoiceId] = useState(selectedDriverVoice || '');
   const [testingVoice, setTestingVoice] = useState<string | null>(null);
+  const [voices, setVoices] = useState<VoiceOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showManual, setShowManual] = useState(false);
 
   useEffect(() => {
     setOfficerVoiceId(selectedOfficerVoice || '');
     setDriverVoiceId(selectedDriverVoice || '');
   }, [selectedOfficerVoice, selectedDriverVoice]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchVoices();
+    }
+  }, [isOpen]);
+
+  const fetchVoices = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/voices');
+      const voiceData = await response.json();
+      setVoices(voiceData);
+    } catch (error) {
+      console.error('Failed to fetch voices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const testVoice = async (voiceId: string, category: 'officer' | 'driver') => {
     if (!voiceId.trim()) return;
@@ -109,112 +131,207 @@ export default function VoiceSelector({
         </CardHeader>
         
         <CardContent className="space-y-6">
-          {/* Officer Voice Input */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white flex items-center gap-2">
-              <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                Officer
-              </Badge>
-              Voice ID
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="officer-voice" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ElevenLabs Voice ID
-                </Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    id="officer-voice"
-                    value={officerVoiceId}
-                    onChange={(e) => setOfficerVoiceId(e.target.value)}
-                    placeholder="pNInz6obpgDQGcFmaJgB"
-                    className="flex-1"
-                  />
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-300">Loading your ElevenLabs voices...</p>
+            </div>
+          ) : (
+            <>
+              {/* Toggle between visual selection and manual input */}
+              <div className="flex justify-center">
+                <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                   <Button
-                    variant="outline"
+                    variant={!showManual ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => testVoice(officerVoiceId, 'officer')}
-                    disabled={!officerVoiceId.trim() || testingVoice === officerVoiceId}
-                    className="flex items-center gap-1"
+                    onClick={() => setShowManual(false)}
+                    className="rounded-md"
                   >
-                    {testingVoice === officerVoiceId ? (
-                      <Volume2 className="h-4 w-4 animate-pulse" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
-                    Test
+                    Select from Library
+                  </Button>
+                  <Button
+                    variant={showManual ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setShowManual(true)}
+                    className="rounded-md"
+                  >
+                    Enter Voice ID
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Enter your ElevenLabs voice ID for the officer role
-                </p>
               </div>
-            </div>
-          </div>
 
-          {/* Driver Voice Input */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white flex items-center gap-2">
-              <Badge variant="outline" className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
-                Driver
-              </Badge>
-              Voice ID
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="driver-voice" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ElevenLabs Voice ID
-                </Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    id="driver-voice"
-                    value={driverVoiceId}
-                    onChange={(e) => setDriverVoiceId(e.target.value)}
-                    placeholder="EXAVITQu4vr4xnSDxMaL"
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => testVoice(driverVoiceId, 'driver')}
-                    disabled={!driverVoiceId.trim() || testingVoice === driverVoiceId}
-                    className="flex items-center gap-1"
-                  >
-                    {testingVoice === driverVoiceId ? (
-                      <Volume2 className="h-4 w-4 animate-pulse" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
-                    Test
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Enter your ElevenLabs voice ID for the driver role
-                </p>
+              {!showManual ? (
+                /* Visual Voice Selection */
+                <>
+                  {/* Officer Voices */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white flex items-center gap-2">
+                      <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                        Officer
+                      </Badge>
+                      Select Voice
+                    </h3>
+                    <div className="grid gap-3 max-h-48 overflow-y-auto">
+                      {voices.map((voice) => (
+                        <div
+                          key={voice.id}
+                          className={`p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                            officerVoiceId === voice.id 
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                              : 'border-gray-200 dark:border-gray-700'
+                          }`}
+                          onClick={() => setOfficerVoiceId(voice.id)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h4 className="font-medium text-gray-900 dark:text-white">{voice.name}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">{voice.description}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: {voice.id}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                testVoice(voice.id, 'officer');
+                              }}
+                              disabled={testingVoice === voice.id}
+                              className="text-blue-600 dark:text-blue-400"
+                            >
+                              {testingVoice === voice.id ? (
+                                <Volume2 className="h-4 w-4 animate-pulse" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Driver Voices */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white flex items-center gap-2">
+                      <Badge variant="outline" className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
+                        Driver
+                      </Badge>
+                      Select Voice
+                    </h3>
+                    <div className="grid gap-3 max-h-48 overflow-y-auto">
+                      {voices.map((voice) => (
+                        <div
+                          key={voice.id}
+                          className={`p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                            driverVoiceId === voice.id 
+                              ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' 
+                              : 'border-gray-200 dark:border-gray-700'
+                          }`}
+                          onClick={() => setDriverVoiceId(voice.id)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h4 className="font-medium text-gray-900 dark:text-white">{voice.name}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">{voice.description}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: {voice.id}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                testVoice(voice.id, 'driver');
+                              }}
+                              disabled={testingVoice === voice.id}
+                              className="text-orange-600 dark:text-orange-400"
+                            >
+                              {testingVoice === voice.id ? (
+                                <Volume2 className="h-4 w-4 animate-pulse" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Manual Voice ID Input */
+                <>
+                  {/* Officer Voice Input */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white flex items-center gap-2">
+                      <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                        Officer
+                      </Badge>
+                      Voice ID
+                    </h3>
+                    <div className="flex gap-2">
+                      <Input
+                        value={officerVoiceId}
+                        onChange={(e) => setOfficerVoiceId(e.target.value)}
+                        placeholder="Enter ElevenLabs Voice ID"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => testVoice(officerVoiceId, 'officer')}
+                        disabled={!officerVoiceId.trim() || testingVoice === officerVoiceId}
+                      >
+                        {testingVoice === officerVoiceId ? (
+                          <Volume2 className="h-4 w-4 animate-pulse" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Driver Voice Input */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white flex items-center gap-2">
+                      <Badge variant="outline" className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
+                        Driver
+                      </Badge>
+                      Voice ID
+                    </h3>
+                    <div className="flex gap-2">
+                      <Input
+                        value={driverVoiceId}
+                        onChange={(e) => setDriverVoiceId(e.target.value)}
+                        placeholder="Enter ElevenLabs Voice ID"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => testVoice(driverVoiceId, 'driver')}
+                        disabled={!driverVoiceId.trim() || testingVoice === driverVoiceId}
+                      >
+                        {testingVoice === driverVoiceId ? (
+                          <Volume2 className="h-4 w-4 animate-pulse" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+                <Button onClick={onClose} variant="outline" className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                  Save Voice Selection
+                </Button>
               </div>
-            </div>
-          </div>
-
-          {/* Instructions */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h4 className="font-medium text-gray-900 dark:text-white mb-2">How to get ElevenLabs Voice IDs:</h4>
-            <ol className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-              <li>1. Go to elevenlabs.io and log into your account</li>
-              <li>2. Click on "Voices" in the left sidebar</li>
-              <li>3. Click on any voice you want to use</li>
-              <li>4. Copy the Voice ID from the voice settings</li>
-              <li>5. Paste it into the fields above and test</li>
-            </ol>
-          </div>
-
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-3">
-            <Button onClick={onClose} variant="outline" className="flex-1">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-              Save Voice IDs
-            </Button>
-          </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
