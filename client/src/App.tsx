@@ -9,6 +9,7 @@ import DotPractice from "@/pages/dot-practice";
 import ConversationalCoach from "@/pages/conversational-coach";
 import Settings from "@/pages/settings";
 import Subscribe from "@/pages/subscribe";
+import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import BottomNavigation from "@/components/bottom-navigation";
@@ -17,7 +18,7 @@ import { useState, useEffect } from "react";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [showAuthForm, setShowAuthForm] = useState<'login' | 'signup' | null>(null);
 
   if (isLoading) {
     return (
@@ -33,21 +34,28 @@ function Router() {
       window.location.reload();
     };
 
-    if (authMode === 'signup') {
+    // Show login form
+    if (showAuthForm === 'login') {
       return (
-        <Signup
+        <Login
           onSuccess={handleAuthSuccess}
-          onSwitchToLogin={() => setAuthMode('login')}
+          onSwitchToSignup={() => setShowAuthForm('signup')}
         />
       );
     }
 
-    return (
-      <Login
-        onSuccess={handleAuthSuccess}
-        onSwitchToSignup={() => setAuthMode('signup')}
-      />
-    );
+    // Show signup form
+    if (showAuthForm === 'signup') {
+      return (
+        <Signup
+          onSuccess={handleAuthSuccess}
+          onSwitchToLogin={() => setShowAuthForm('login')}
+        />
+      );
+    }
+
+    // Show landing page by default
+    return <Landing onGetStarted={() => setShowAuthForm('login')} onSignUp={() => setShowAuthForm('signup')} />;
   }
 
   return (

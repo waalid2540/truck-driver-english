@@ -1,7 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Truck, MessageCircle, GraduationCap, Shield } from "lucide-react";
 
-export default function Landing() {
+interface LandingProps {
+  onGetStarted: () => void;
+  onSignUp: () => void;
+}
+
+export default function Landing({ onGetStarted, onSignUp }: LandingProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-16">
@@ -18,13 +23,23 @@ export default function Landing() {
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
             Master English communication skills for DOT inspections and professional driving scenarios with AI-powered practice sessions.
           </p>
-          <Button 
-            size="lg" 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
-            onClick={() => window.location.href = '/api/login'}
-          >
-            Get Started - Log In
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              size="lg" 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
+              onClick={onGetStarted}
+            >
+              Get Started - Log In
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3"
+              onClick={onSignUp}
+            >
+              Create Account
+            </Button>
+          </div>
         </div>
 
         {/* Features Grid */}
