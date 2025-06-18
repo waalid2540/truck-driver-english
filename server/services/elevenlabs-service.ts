@@ -71,7 +71,8 @@ export async function generateElevenLabsSpeech(
           stability: 0.7,
           similarity_boost: 0.8,
           style: 0.2,
-          use_speaker_boost: true
+          use_speaker_boost: true,
+          speaking_rate: 0.3
         }
       }),
     });

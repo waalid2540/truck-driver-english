@@ -265,6 +265,9 @@ export default function DotPractice() {
           console.log('Maximum mobile amplification unavailable:', error);
         }
         
+        // Set ultra slow playback for English learners
+        audio.playbackRate = 0.4;
+        
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
@@ -491,6 +494,9 @@ export default function DotPractice() {
         } catch (error) {
           console.log('Maximum driver mobile amplification unavailable:', error);
         }
+        
+        // Set ultra slow playback for English learners
+        audio.playbackRate = 0.4;
         
         audio.onended = () => {
           setIsSpeaking(false);
