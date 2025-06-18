@@ -197,10 +197,10 @@ export default function DotPractice() {
           const mainGain = audioContext.createGain();
           const boostGain = audioContext.createGain();
           
-          // Maximum amplification settings
-          preGain.gain.value = 8.0;    // 800% pre-amplification
-          mainGain.gain.value = 6.0;   // 600% main amplification  
-          boostGain.gain.value = 4.0;  // 400% final boost
+          // Ultra maximum amplification settings for GTTS
+          preGain.gain.value = 15.0;    // 1500% pre-amplification
+          mainGain.gain.value = 10.0;   // 1000% main amplification  
+          boostGain.gain.value = 8.0;   // 800% final boost
           
           // Aggressive compression for maximum loudness
           const compressor = audioContext.createDynamicsCompressor();
@@ -421,6 +421,9 @@ export default function DotPractice() {
         audio.volume = 1.0;
         audio.playbackRate = 1.0;
         
+        // Force maximum volume before amplification
+        console.log('Setting maximum base volume for GTTS audio');
+        
         // Maximum mobile audio amplification for driver
         try {
           const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -430,9 +433,9 @@ export default function DotPractice() {
           const mainGain = audioContext.createGain();
           const boostGain = audioContext.createGain();
           
-          preGain.gain.value = 8.0;
-          mainGain.gain.value = 6.0;
-          boostGain.gain.value = 4.0;
+          preGain.gain.value = 15.0;
+          mainGain.gain.value = 10.0;
+          boostGain.gain.value = 8.0;
           
           const compressor = audioContext.createDynamicsCompressor();
           compressor.threshold.value = -12;
@@ -470,7 +473,15 @@ export default function DotPractice() {
         
         audio.muted = false;
         audio.preload = 'auto';
-        await audio.play();
+        
+        console.log('Attempting to play GTTS officer audio...');
+        try {
+          await audio.play();
+          console.log('GTTS officer audio playing successfully');
+        } catch (playError) {
+          console.error('Audio play failed:', playError);
+          throw playError;
+        }
         return;
       }
     } catch (error) {

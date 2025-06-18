@@ -128,6 +128,7 @@ The application is designed as a mobile-first progressive web app with a maximum
 - June 18, 2025: Fixed simultaneous voice issue - now sequential conversation with officer speaking first, then driver responding when officer finishes to prevent API overload
 - June 18, 2025: Reduced voice speech rates to 0.5 for both officer and driver voices - much slower, clearer speech for improved English learning comprehension
 - June 18, 2025: Switched from ElevenLabs to GTTS for testing - more reliable voice generation without API limits or concurrent request issues
+- June 18, 2025: Applied ultra-high amplification to GTTS voices - 120,000% total gain (1,200x volume boost) for maximum mobile audio clarity
 
 ## User Preferences
 

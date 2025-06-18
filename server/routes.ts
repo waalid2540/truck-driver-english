@@ -360,7 +360,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voiceType = voice === 'driver' ? 'driver' : 'officer';
       
       // Use GTTS for testing - reliable and fast
+      console.log(`Using GTTS to generate ${voiceType} voice for text: "${text}"`);
       const audioBuffer = await generateDOTSpeech(text, voiceType);
+      console.log(`GTTS generated ${audioBuffer.length} bytes of audio data`);
       
       res.set({
         'Content-Type': 'audio/mpeg',
