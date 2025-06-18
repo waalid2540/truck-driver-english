@@ -138,7 +138,9 @@ export default function DotPractice() {
         setShowAnswer(true);
         if (isAudioEnabled && questions[currentQuestionIndex]) {
           // Play driver response after showing the answer
-          setTimeout(() => speakDriverResponse(questions[currentQuestionIndex].correctAnswer), 500);
+          const currentQuestion = questions[currentQuestionIndex];
+          const correctAnswerText = currentQuestion.options[currentQuestion.correctAnswer];
+          setTimeout(() => speakDriverResponse(correctAnswerText), 500);
         }
       }, 2000); // 2 seconds after officer question
 
