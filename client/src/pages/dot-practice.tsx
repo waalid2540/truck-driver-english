@@ -167,7 +167,7 @@ export default function DotPractice() {
           const correctAnswerText = currentQuestion.options[currentQuestion.correctAnswer];
           speakDriverResponse(correctAnswerText);
         }
-      }, 2000); // 2 seconds after officer question
+      }, 100); // Immediately after officer question
 
       return () => clearTimeout(timer);
     }
@@ -271,9 +271,12 @@ export default function DotPractice() {
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
-          // Auto-start listening after officer speaks immediately
-          if (isAudioEnabled && !userResponse) {
-            startListening();
+          // Immediately show answer and play driver response
+          if (autoPlay && questions[currentQuestionIndex]) {
+            setShowAnswer(true);
+            const currentQuestion = questions[currentQuestionIndex];
+            const correctAnswerText = currentQuestion.options[currentQuestion.correctAnswer];
+            speakDriverResponse(correctAnswerText);
           }
         };
         
