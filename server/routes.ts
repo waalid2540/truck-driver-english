@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { generateConversationResponse, generatePracticeScenario } from "./services/openai";
 import { transcribeAudio, generateSpeech } from "./services/whisper";
 import { generateDOTSpeech } from "./services/gtts-service";
+import { generateDOTSpeechElevenLabs } from "./services/elevenlabs-service";
 import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -201,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // DOT practice voice endpoint using GTTS for better mobile volume
+  // DOT practice voice endpoint with ElevenLabs premium quality
   app.post("/api/speak-dot", async (req, res) => {
     try {
       const { text, voice } = req.body;
@@ -209,20 +210,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No text provided" });
       }
 
-      // Generate GTTS voice optimized for mobile volume
       const voiceType = voice === 'driver' ? 'driver' : 'officer';
-      const audioBuffer = await generateDOTSpeech(text, voiceType);
       
-      res.set({
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.length,
-        'Cache-Control': 'public, max-age=3600',
-      });
-      
-      res.send(audioBuffer);
+      try {
+        // Try ElevenLabs first for premium quality
+        const audioBuffer = await generateDOTSpeechElevenLabs(text, voiceType);
+        
+        res.set({
+          'Content-Type': 'audio/mpeg',
+          'Content-Length': audioBuffer.length,
+          'Cache-Control': 'public, max-age=3600',
+        });
+        
+        res.send(audioBuffer);
+        return;
+      } catch (elevenLabsError) {
+        console.log("ElevenLabs unavailable, falling back to GTTS:", (elevenLabsError as Error).message);
+        
+        // Fallback to GTTS
+        const audioBuffer = await generateDOTSpeech(text, voiceType);
+        
+        res.set({
+          'Content-Type': 'audio/mpeg',
+          'Content-Length': audioBuffer.length,
+          'Cache-Control': 'public, max-age=3600',
+        });
+        
+        res.send(audioBuffer);
+      }
     } catch (error) {
-      console.error("GTTS voice generation error:", error);
-      res.status(500).json({ message: "Failed to generate GTTS voice: " + (error as Error).message });
+      console.error("Voice generation error:", error);
+      res.status(500).json({ message: "Failed to generate voice: " + (error as Error).message });
     }
   });
 
