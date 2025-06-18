@@ -1,54 +1,57 @@
-import { ElevenLabs } from 'elevenlabs';
-
 export interface ElevenLabsResponse {
   audioBuffer: Buffer;
   success: boolean;
   error?: string;
 }
 
-let elevenLabsClient: ElevenLabs | null = null;
-
-function initElevenLabs(): ElevenLabs {
-  if (!elevenLabsClient) {
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) {
-      throw new Error('ELEVENLABS_API_KEY environment variable is required');
-    }
-    elevenLabsClient = new ElevenLabs({ apiKey });
-  }
-  return elevenLabsClient;
-}
-
 export async function generateElevenLabsSpeech(
   text: string, 
   voice: 'officer' | 'driver' = 'officer'
 ): Promise<ElevenLabsResponse> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  
+  if (!apiKey) {
+    return {
+      audioBuffer: Buffer.alloc(0),
+      success: false,
+      error: 'ELEVENLABS_API_KEY environment variable is required'
+    };
+  }
+
   try {
-    const client = initElevenLabs();
-    
-    // Professional male voices optimized for DOT practice
+    // Premium male voices optimized for DOT practice
     const voiceIds = {
-      officer: 'pNInz6obpgDQGcFmaJgB', // Adam - authoritative male voice
-      driver: 'EXAVITQu4vr4xnSDxMaL', // Sam - professional male voice
+      officer: 'pNInz6obpgDQGcFmaJgB', // Adam - deep, authoritative male voice
+      driver: 'EXAVITQu4vr4xnSDxMaL', // Sam - professional, clear male voice
     };
     
-    const response = await client.textToSpeech(voiceIds[voice], {
-      text,
-      model_id: 'eleven_multilingual_v2',
-      voice_settings: {
-        stability: 0.7,
-        similarity_boost: 0.8,
-        style: 0.3,
-        use_speaker_boost: true,
-      },
-    });
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceIds[voice]}`;
     
-    // Convert response to buffer
-    const chunks: Buffer[] = [];
-    for await (const chunk of response) {
-      chunks.push(chunk);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.7,
+          similarity_boost: 0.8,
+          style: 0.2,
+          use_speaker_boost: true
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
     }
-    const audioBuffer = Buffer.concat(chunks);
+
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
     
     return {
       audioBuffer,
