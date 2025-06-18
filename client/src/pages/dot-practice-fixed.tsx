@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Shield, Volume2, PlayCircle } from "lucide-react";
+import { ArrowLeft, Shield, Volume2, PlayCircle, Play, Pause } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { DotCategory, DotQuestion } from "@shared/schema";
@@ -16,6 +16,8 @@ export default function DotPracticeFixed() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [isPlayingOfficer, setIsPlayingOfficer] = useState(false);
   const [isPlayingDriver, setIsPlayingDriver] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(false);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
 
   const { toast } = useToast();
 
@@ -87,6 +89,57 @@ export default function DotPracticeFixed() {
       });
     }
   };
+
+  // Auto-play sequence: officer question → driver response → next question
+  const playAutoSequence = async () => {
+    if (!questions || questions.length === 0 || !questions[currentQuestionIndex]) return;
+    
+    setIsAutoPlaying(true);
+    setShowAnswer(true);
+    
+    try {
+      const currentQuestion = questions[currentQuestionIndex];
+      
+      // Play officer question
+      await playVoice(currentQuestion.question, 'officer');
+      
+      // Wait 2 seconds between officer and driver
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Play driver response
+      if (Array.isArray(currentQuestion.options)) {
+        const correctAnswer = currentQuestion.options[currentQuestion.correctAnswer];
+        await playVoice(correctAnswer, 'driver');
+      }
+      
+      // Wait 3 seconds then move to next question
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      if (autoPlay) {
+        if (currentQuestionIndex < questions.length - 1) {
+          setCurrentQuestionIndex(prev => prev + 1);
+          setShowAnswer(false);
+        } else {
+          setAutoPlay(false);
+          setIsAutoPlaying(false);
+          toast({
+            title: "Auto-play Complete!",
+            description: `Finished all ${questions.length} questions.`,
+          });
+        }
+      }
+    } catch (error) {
+      setAutoPlay(false);
+      setIsAutoPlaying(false);
+    }
+  };
+
+  // Auto-play effect
+  useEffect(() => {
+    if (autoPlay && questions && questions.length > 0 && !isAutoPlaying) {
+      playAutoSequence();
+    }
+  }, [autoPlay, currentQuestionIndex, questions]);
 
   const handleCategorySelect = (categoryId: number) => {
     setSelectedCategory(categoryId);
@@ -167,6 +220,41 @@ export default function DotPracticeFixed() {
               Your Authentic Officer-Driver Questions ({questions?.length || 0})
             </h1>
           </div>
+        </div>
+
+        {/* Auto-play Controls */}
+        <div className="mb-6 text-center">
+          <Button
+            onClick={() => {
+              setAutoPlay(!autoPlay);
+              if (!autoPlay) {
+                setCurrentQuestionIndex(0);
+                setShowAnswer(false);
+              } else {
+                setIsAutoPlaying(false);
+              }
+            }}
+            size="lg"
+            variant={autoPlay ? "destructive" : "default"}
+            className="flex items-center gap-2"
+          >
+            {autoPlay ? (
+              <>
+                <Pause className="w-5 h-5" />
+                Stop Hands-Free Mode
+              </>
+            ) : (
+              <>
+                <Play className="w-5 h-5" />
+                Start Hands-Free Auto-Play
+              </>
+            )}
+          </Button>
+          {autoPlay && (
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+              Auto-playing: Officer question → Driver response → Next question
+            </p>
+          )}
         </div>
 
         {/* Progress */}
@@ -261,13 +349,13 @@ export default function DotPracticeFixed() {
           <Button
             variant="outline"
             onClick={handlePrevQuestion}
-            disabled={currentQuestionIndex === 0}
+            disabled={currentQuestionIndex === 0 || autoPlay}
           >
             Previous Question
           </Button>
           <Button
             onClick={handleNextQuestion}
-            disabled={!questions || currentQuestionIndex === questions.length - 1}
+            disabled={(!questions || currentQuestionIndex === questions.length - 1) || autoPlay}
           >
             Next Question
           </Button>

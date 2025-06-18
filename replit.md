@@ -134,6 +134,7 @@ The application is designed as a mobile-first progressive web app with a maximum
 - June 18, 2025: Improved conversation pacing with longer delays - 2 seconds between officer and driver, 4 seconds between exchanges for better learning comprehension
 - June 18, 2025: Restored complete authentic dataset of 218 officer-driver conversations from original user file - all authentic traffic stop scenarios now available with proper professional responses
 - June 18, 2025: Simplified DOT practice to direct access of user's 218 authentic questions - removed complicated categories and documentation, loads real officer-driver conversations immediately with simple voice over
+- June 18, 2025: Added hands-free auto-play mode - automatically plays officer question, waits 2 seconds, plays driver response, waits 3 seconds, moves to next question, continues through all 218 questions without user interaction
 
 ## User Preferences
 
