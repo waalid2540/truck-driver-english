@@ -13,8 +13,9 @@ export interface ConversationResponse {
   assistantId?: string;
 }
 
-// Store for managing assistant threads
+// Store for managing assistant threads and conversation history
 const threadStore = new Map<string, string>(); // userId -> threadId
+const conversationStore = new Map<string, Array<{ role: 'user' | 'assistant'; content: string; timestamp: Date }>>(); // userId -> conversation history
 let truckerAssistantId: string | null = null;
 
 function analyzeConversationContext(
@@ -185,9 +186,80 @@ export async function generateConversationResponse(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
   userId: string = "default"
 ): Promise<ConversationResponse> {
-  // For now, use enhanced fallback with improved context until Assistants API is fully stable
-  console.log(`Generating response for user: ${userId} with enhanced context`);
-  return generateFallbackResponse(userMessage, conversationHistory, userId);
+  // Store user message in persistent conversation history
+  const fullHistory = getOrCreateUserHistory(userId);
+  fullHistory.push({ role: 'user', content: userMessage, timestamp: new Date() });
+  
+  // Merge current session history with persistent history
+  const recentHistory = fullHistory.slice(-20); // Keep last 20 messages for context
+  
+  console.log(`Generating response for user: ${userId} with ${recentHistory.length} messages of history`);
+  const response = await generateFallbackResponse(userMessage, recentHistory.map(h => ({ role: h.role, content: h.content })), userId);
+  
+  // Store AI response in persistent history
+  fullHistory.push({ role: 'assistant', content: response.message, timestamp: new Date() });
+  
+  return response;
+}
+
+// Analyze conversation history to provide intelligent context
+function summarizeConversationHistory(history: Array<{ role: 'user' | 'assistant'; content: string }>): string {
+  if (history.length === 0) {
+    return "First conversation with this driver.";
+  }
+
+  const userMessages = history.filter(h => h.role === 'user').map(h => h.content);
+  const assistantMessages = history.filter(h => h.role === 'assistant').map(h => h.content);
+  
+  // Extract key topics discussed
+  const allText = [...userMessages, ...assistantMessages].join(' ').toLowerCase();
+  const topics = [];
+  
+  if (allText.includes('dot') || allText.includes('inspection') || allText.includes('officer')) {
+    topics.push('DOT inspections and officer interactions');
+  }
+  if (allText.includes('delivery') || allText.includes('customer') || allText.includes('warehouse')) {
+    topics.push('delivery and customer communication');
+  }
+  if (allText.includes('dispatch') || allText.includes('route') || allText.includes('load')) {
+    topics.push('dispatcher coordination and logistics');
+  }
+  if (allText.includes('practice') || allText.includes('english') || allText.includes('learn')) {
+    topics.push('English practice and learning goals');
+  }
+  if (allText.includes('question') || allText.includes('help') || allText.includes('explain')) {
+    topics.push('questions and explanations requested');
+  }
+
+  // Identify recent questions asked by assistant
+  const recentQuestions = assistantMessages.slice(-5).filter(msg => msg.includes('?'));
+  
+  // Build context summary
+  let summary = `Conversation history: ${history.length} total exchanges. `;
+  
+  if (topics.length > 0) {
+    summary += `Topics covered: ${topics.join(', ')}. `;
+  }
+  
+  if (recentQuestions.length > 0) {
+    summary += `Recent questions asked: "${recentQuestions[recentQuestions.length - 1]}". `;
+  }
+  
+  // Check for specific references to previous conversations
+  const lastUserMessage = userMessages[userMessages.length - 1] || '';
+  if (lastUserMessage.includes('question you asked') || lastUserMessage.includes('we talked about') || lastUserMessage.includes('you said')) {
+    summary += `Driver is referencing previous conversation content - provide specific recall. `;
+  }
+  
+  return summary;
+}
+
+// Get or create persistent conversation history for user
+function getOrCreateUserHistory(userId: string): Array<{ role: 'user' | 'assistant'; content: string; timestamp: Date }> {
+  if (!conversationStore.has(userId)) {
+    conversationStore.set(userId, []);
+  }
+  return conversationStore.get(userId)!;
 }
 
 // Enhanced chat completion with persistent thread tracking
@@ -201,37 +273,38 @@ async function generateFallbackResponse(
   // Get or create thread for memory persistence
   const threadId = await getUserThread(userId);
   
-  const systemPrompt = `You are an expert English conversation coach for truck drivers with persistent memory across sessions.
+  // Analyze conversation patterns to provide better context
+  const conversationSummary = summarizeConversationHistory(conversationHistory);
+  
+  const systemPrompt = `You are an expert English conversation coach for truck drivers with full memory of past conversations.
 
-ENHANCED MEMORY CAPABILITIES:
-- Remember all previous conversations with this driver (User ID: ${userId})
-- Build upon topics, vocabulary, and scenarios from past sessions
-- Track their learning progress, preferred practice areas, and skill improvements
-- Reference previous conversations naturally to show continuity
-- Adapt teaching style based on their demonstrated preferences and needs
+PERSISTENT MEMORY:
+- You remember ALL previous conversations with this driver (${conversationHistory.length} messages in history)
+- When they reference "that question you asked me" or "we talked about", recall specific details from earlier exchanges
+- Build naturally on topics, practice areas, and challenges discussed before
+- Reference their progress, mistakes, and improvements from previous sessions
+- Maintain conversation continuity as if you've been talking continuously
 
-TRUCKING EXPERTISE & SCENARIOS:
-- DOT inspections, compliance communication, safety protocols
-- Customer delivery interactions, problem resolution, professional communication
-- Dispatcher communication for route changes, delays, emergency situations
-- Weigh station procedures, officer interactions, documentation requirements
-- Loading dock protocols, warehouse communication, logistics coordination
-- Fuel stop etiquette, truck stop interactions, driver networking
-- Mechanic consultations, breakdown reporting, maintenance communication
-- Emergency communication, incident reporting, professional crisis management
+CONVERSATION CONTEXT:
+${conversationSummary}
 
-CONVERSATION OPTIMIZATION:
-- Keep responses concise (1-2 sentences) for hands-free voice interaction
-- Use encouraging, supportive tone that builds confidence
-- Provide immediate, gentle corrections when helpful
-- Ask engaging follow-up questions to maintain natural conversation flow
-- Use authentic trucking terminology and real-world scenarios
-- Remember their routes, challenges, and practice goals from previous sessions
+CURRENT SITUATION: ${contextAnalysis}
 
-Current Context: ${contextAnalysis}
-Thread ID: ${threadId}
+RESPONSE GUIDELINES:
+- Keep responses 1-2 sentences for voice interaction
+- Reference previous conversations when relevant ("As we discussed earlier...", "Remember when you mentioned...")
+- When they ask about "that question" or "what we talked about", specifically recall and reference it
+- Build on their established skill level and practice preferences
+- Use supportive, encouraging tone that acknowledges their ongoing journey
 
-Build upon everything you know about this driver from previous conversations.`;
+TRUCKING SCENARIOS TO DRAW FROM:
+- DOT inspections and officer interactions
+- Customer delivery communications
+- Dispatcher coordination and problem-solving
+- Equipment maintenance discussions
+- Route planning and logistics communication
+
+Remember: This driver knows you from previous conversations. Act with familiarity and continuity.`;
 
   const messages = [
     { role: 'system' as const, content: systemPrompt },
