@@ -119,6 +119,7 @@ export default function DotPracticeFixed() {
         if (currentQuestionIndex < questions.length - 1) {
           setCurrentQuestionIndex(prev => prev + 1);
           setShowAnswer(false);
+          setIsAutoPlaying(false); // Reset so next question can start
         } else {
           setAutoPlay(false);
           setIsAutoPlaying(false);
@@ -130,6 +131,8 @@ export default function DotPracticeFixed() {
       }
     } catch (error) {
       setAutoPlay(false);
+      setIsAutoPlaying(false);
+    } finally {
       setIsAutoPlaying(false);
     }
   };
