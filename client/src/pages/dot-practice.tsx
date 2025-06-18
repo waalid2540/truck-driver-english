@@ -168,6 +168,8 @@ export default function DotPractice() {
 
     try {
       // Use GTTS for professional voice quality
+      console.log('Requesting GTTS officer voice for:', currentQuestion.question);
+      
       const response = await fetch('/api/speak-dot', {
         method: 'POST',
         headers: {
@@ -182,10 +184,24 @@ export default function DotPractice() {
 
       if (response.ok) {
         const audioBlob = await response.blob();
+        console.log('GTTS officer audio blob size:', audioBlob.size, 'type:', audioBlob.type);
+        
+        if (audioBlob.size === 0) {
+          console.error('Empty GTTS officer audio blob received');
+          setIsSpeaking(false);
+          return;
+        }
+        
         const audioUrl = URL.createObjectURL(audioBlob);
+        console.log('Created GTTS officer audio URL');
         
         const audio = new Audio(audioUrl);
         audio.volume = 1.0;
+        
+        // Debug GTTS audio loading
+        audio.onloadstart = () => console.log('GTTS officer audio loading...');
+        audio.oncanplay = () => console.log('GTTS officer audio ready to play');
+        audio.onerror = (e) => console.error('GTTS officer audio error:', e);
         
         // Maximum mobile audio amplification system
         try {
@@ -421,8 +437,21 @@ export default function DotPractice() {
         audio.volume = 1.0;
         audio.playbackRate = 1.0;
         
-        // Force maximum volume before amplification
-        console.log('Setting maximum base volume for GTTS audio');
+        // Debug GTTS driver audio
+        console.log('GTTS driver audio blob size:', audioBlob.size, 'type:', audioBlob.type);
+        
+        if (audioBlob.size === 0) {
+          console.error('Empty GTTS driver audio blob received');
+          setIsSpeaking(false);
+          return;
+        }
+        
+        console.log('Created GTTS driver audio URL');
+        
+        // Debug audio loading
+        audio.onloadstart = () => console.log('GTTS driver audio loading...');
+        audio.oncanplay = () => console.log('GTTS driver audio ready to play');
+        audio.onerror = (e) => console.error('GTTS driver audio error:', e);
         
         // Maximum mobile audio amplification for driver
         try {
