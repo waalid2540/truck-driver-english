@@ -29,7 +29,7 @@ export async function transcribeAudio(audioBuffer: Buffer, fileName: string): Pr
     const transcription = await openai.audio.transcriptions.create({
       file: audioReadStream,
       model: "whisper-1",
-      language: "en",
+      // Remove language restriction to support multilingual transcription
       response_format: "json",
       temperature: 0.2,
     });
@@ -46,8 +46,11 @@ export async function transcribeAudio(audioBuffer: Buffer, fileName: string): Pr
   }
 }
 
-export async function generateSpeech(text: string, voice: 'officer' | 'driver' = 'officer'): Promise<Buffer> {
+export async function generateSpeech(text: string, voice: 'officer' | 'driver' = 'officer', language?: string): Promise<Buffer> {
   try {
+    // Detect language from text for multilingual support
+    const detectedLanguage = detectLanguage(text);
+    
     // Professional voice selection for DOT practice scenarios
     const voiceMap = {
       officer: "echo", // Authoritative, clear male voice for DOT officers
@@ -59,7 +62,7 @@ export async function generateSpeech(text: string, voice: 'officer' | 'driver' =
       voice: voiceMap[voice],
       input: text,
       response_format: "mp3",
-      speed: 0.85, // Slower for better clarity on mobile devices
+      speed: detectedLanguage === 'arabic' ? 0.75 : 0.85, // Slower for Arabic and non-English languages
     });
     
     const buffer = Buffer.from(await response.arrayBuffer());
@@ -68,4 +71,21 @@ export async function generateSpeech(text: string, voice: 'officer' | 'driver' =
     console.error("OpenAI TTS error:", error);
     throw new Error("Failed to generate speech: " + (error as Error).message);
   }
+}
+
+// Simple language detection for common trucking languages
+function detectLanguage(text: string): string {
+  const arabicRegex = /[\u0600-\u06FF]/;
+  const spanishWords = ['sí', 'no', 'hola', 'gracias', 'ayuda', 'por favor', 'camión'];
+  const russianRegex = /[\u0400-\u04FF]/;
+  const hindiRegex = /[\u0900-\u097F]/;
+  const frenchWords = ['oui', 'non', 'bonjour', 'merci', 'aide', 's\'il vous plaît', 'camion'];
+  
+  if (arabicRegex.test(text)) return 'arabic';
+  if (russianRegex.test(text)) return 'russian';
+  if (hindiRegex.test(text)) return 'hindi';
+  if (spanishWords.some(word => text.toLowerCase().includes(word))) return 'spanish';
+  if (frenchWords.some(word => text.toLowerCase().includes(word))) return 'french';
+  
+  return 'english';
 }
