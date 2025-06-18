@@ -359,32 +359,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const voiceType = voice === 'driver' ? 'driver' : 'officer';
       
-      try {
-        // Try ElevenLabs first for premium quality with custom voice
-        const audioBuffer = await generateDOTSpeechElevenLabs(text, voiceType, voiceId);
-        
-        res.set({
-          'Content-Type': 'audio/mpeg',
-          'Content-Length': audioBuffer.length,
-          'Cache-Control': 'public, max-age=3600',
-        });
-        
-        res.send(audioBuffer);
-        return;
-      } catch (elevenLabsError) {
-        console.log("ElevenLabs unavailable, falling back to GTTS:", (elevenLabsError as Error).message);
-        
-        // Fallback to GTTS
-        const audioBuffer = await generateDOTSpeech(text, voiceType);
-        
-        res.set({
-          'Content-Type': 'audio/mpeg',
-          'Content-Length': audioBuffer.length,
-          'Cache-Control': 'public, max-age=3600',
-        });
-        
-        res.send(audioBuffer);
-      }
+      // Use GTTS for testing - reliable and fast
+      const audioBuffer = await generateDOTSpeech(text, voiceType);
+      
+      res.set({
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': audioBuffer.length,
+        'Cache-Control': 'public, max-age=3600',
+      });
+      
+      res.send(audioBuffer);
     } catch (error) {
       console.error("Voice generation error:", error);
       res.status(500).json({ message: "Failed to generate voice: " + (error as Error).message });
