@@ -175,56 +175,69 @@ export default function DotPractice() {
         const audio = new Audio(audioUrl);
         audio.volume = 1.0;
         
-        // High-quality mobile audio amplification system
+        // Maximum mobile audio amplification system
         try {
           const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
           const source = audioContext.createMediaElementSource(audio);
           
-          // Quality-focused gain staging
+          // Extreme gain staging for maximum mobile volume
           const preGain = audioContext.createGain();
           const mainGain = audioContext.createGain();
+          const boostGain = audioContext.createGain();
           
-          // Balanced amplification for clarity
-          preGain.gain.value = 4.0;    // 400% pre-amplification
-          mainGain.gain.value = 3.5;   // 350% main amplification
+          // Maximum amplification settings
+          preGain.gain.value = 8.0;    // 800% pre-amplification
+          mainGain.gain.value = 6.0;   // 600% main amplification  
+          boostGain.gain.value = 4.0;  // 400% final boost
           
-          // Gentle compression for clarity preservation
+          // Aggressive compression for maximum loudness
           const compressor = audioContext.createDynamicsCompressor();
-          compressor.threshold.value = -18;
-          compressor.knee.value = 15;
-          compressor.ratio.value = 4;
-          compressor.attack.value = 0.01;
-          compressor.release.value = 0.5;
+          compressor.threshold.value = -12;
+          compressor.knee.value = 30;
+          compressor.ratio.value = 20;
+          compressor.attack.value = 0.003;
+          compressor.release.value = 0.25;
           
-          // Speech clarity enhancer
+          // Speech frequency boost for clarity
           const speechFilter = audioContext.createBiquadFilter();
           speechFilter.type = 'peaking';
-          speechFilter.frequency.value = 2500;  // Optimal speech frequency
-          speechFilter.Q.value = 2.0;
-          speechFilter.gain.value = 4;
+          speechFilter.frequency.value = 2000;  // Key speech frequency
+          speechFilter.Q.value = 3.0;
+          speechFilter.gain.value = 8;
           
-          // High-frequency roll-off for noise reduction
-          const noiseFilter = audioContext.createBiquadFilter();
-          noiseFilter.type = 'lowpass';
-          noiseFilter.frequency.value = 8000;
-          noiseFilter.Q.value = 1.0;
+          // Secondary speech boost
+          const midBoost = audioContext.createBiquadFilter();
+          midBoost.type = 'peaking';
+          midBoost.frequency.value = 1000;
+          midBoost.Q.value = 2.0;
+          midBoost.gain.value = 6;
           
-          // Connect optimized audio chain: source -> preGain -> speechFilter -> mainGain -> noiseFilter -> compressor -> output
+          // Final limiter to prevent distortion
+          const limiter = audioContext.createDynamicsCompressor();
+          limiter.threshold.value = -6;
+          limiter.knee.value = 0;
+          limiter.ratio.value = 50;
+          limiter.attack.value = 0.001;
+          limiter.release.value = 0.1;
+          
+          // Connect maximum volume chain
           source.connect(preGain);
-          preGain.connect(speechFilter);
+          preGain.connect(midBoost);
+          midBoost.connect(speechFilter);
           speechFilter.connect(mainGain);
-          mainGain.connect(noiseFilter);
-          noiseFilter.connect(compressor);
-          compressor.connect(audioContext.destination);
+          mainGain.connect(boostGain);
+          boostGain.connect(compressor);
+          compressor.connect(limiter);
+          limiter.connect(audioContext.destination);
           
           // Ensure audio context is active
           if (audioContext.state === 'suspended') {
             audioContext.resume();
           }
           
-          console.log('Applied high-quality mobile amplification: 1400% gain with clarity optimization');
+          console.log('Applied maximum mobile amplification: 19,200% total gain with speech optimization');
         } catch (error) {
-          console.log('Quality mobile amplification unavailable:', error);
+          console.log('Maximum mobile amplification unavailable:', error);
         }
         
         audio.onended = () => {
@@ -331,56 +344,69 @@ export default function DotPractice() {
         const audio = new Audio(audioUrl);
         audio.volume = 1.0;
         
-        // High-quality mobile audio amplification system for driver
+        // Maximum mobile audio amplification system for driver
         try {
           const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
           const source = audioContext.createMediaElementSource(audio);
           
-          // Quality-focused gain staging
+          // Extreme gain staging for maximum mobile volume
           const preGain = audioContext.createGain();
           const mainGain = audioContext.createGain();
+          const boostGain = audioContext.createGain();
           
-          // Balanced amplification for clarity
-          preGain.gain.value = 4.0;    // 400% pre-amplification
-          mainGain.gain.value = 3.5;   // 350% main amplification
+          // Maximum amplification settings
+          preGain.gain.value = 8.0;    // 800% pre-amplification
+          mainGain.gain.value = 6.0;   // 600% main amplification  
+          boostGain.gain.value = 4.0;  // 400% final boost
           
-          // Gentle compression for clarity preservation
+          // Aggressive compression for maximum loudness
           const compressor = audioContext.createDynamicsCompressor();
-          compressor.threshold.value = -18;
-          compressor.knee.value = 15;
-          compressor.ratio.value = 4;
-          compressor.attack.value = 0.01;
-          compressor.release.value = 0.5;
+          compressor.threshold.value = -12;
+          compressor.knee.value = 30;
+          compressor.ratio.value = 20;
+          compressor.attack.value = 0.003;
+          compressor.release.value = 0.25;
           
-          // Speech clarity enhancer
+          // Speech frequency boost for clarity
           const speechFilter = audioContext.createBiquadFilter();
           speechFilter.type = 'peaking';
-          speechFilter.frequency.value = 2500;  // Optimal speech frequency
-          speechFilter.Q.value = 2.0;
-          speechFilter.gain.value = 4;
+          speechFilter.frequency.value = 2000;  // Key speech frequency
+          speechFilter.Q.value = 3.0;
+          speechFilter.gain.value = 8;
           
-          // High-frequency roll-off for noise reduction
-          const noiseFilter = audioContext.createBiquadFilter();
-          noiseFilter.type = 'lowpass';
-          noiseFilter.frequency.value = 8000;
-          noiseFilter.Q.value = 1.0;
+          // Secondary speech boost
+          const midBoost = audioContext.createBiquadFilter();
+          midBoost.type = 'peaking';
+          midBoost.frequency.value = 1000;
+          midBoost.Q.value = 2.0;
+          midBoost.gain.value = 6;
           
-          // Connect optimized audio chain: source -> preGain -> speechFilter -> mainGain -> noiseFilter -> compressor -> output
+          // Final limiter to prevent distortion
+          const limiter = audioContext.createDynamicsCompressor();
+          limiter.threshold.value = -6;
+          limiter.knee.value = 0;
+          limiter.ratio.value = 50;
+          limiter.attack.value = 0.001;
+          limiter.release.value = 0.1;
+          
+          // Connect maximum volume chain
           source.connect(preGain);
-          preGain.connect(speechFilter);
+          preGain.connect(midBoost);
+          midBoost.connect(speechFilter);
           speechFilter.connect(mainGain);
-          mainGain.connect(noiseFilter);
-          noiseFilter.connect(compressor);
-          compressor.connect(audioContext.destination);
+          mainGain.connect(boostGain);
+          boostGain.connect(compressor);
+          compressor.connect(limiter);
+          limiter.connect(audioContext.destination);
           
           // Ensure audio context is active
           if (audioContext.state === 'suspended') {
             audioContext.resume();
           }
           
-          console.log('Applied high-quality driver mobile amplification: 1400% gain with clarity optimization');
+          console.log('Applied maximum driver mobile amplification: 19,200% total gain with speech optimization');
         } catch (error) {
-          console.log('Quality driver mobile amplification unavailable:', error);
+          console.log('Maximum driver mobile amplification unavailable:', error);
         }
         
         audio.onended = () => {
@@ -867,7 +893,7 @@ export default function DotPractice() {
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-semibold text-yellow-800 dark:text-yellow-300">Professional Response:</h4>
                       <Button
-                        onClick={() => speakDriverResponse(currentQuestion.correctAnswer)}
+                        onClick={() => speakDriverResponse(currentQuestion.options[currentQuestion.correctAnswer])}
                         disabled={isSpeaking}
                         variant="ghost"
                         size="sm"
@@ -877,7 +903,7 @@ export default function DotPractice() {
                         <span className="text-xs">Listen</span>
                       </Button>
                     </div>
-                    <p className="text-gray-800 dark:text-gray-200 italic mb-2">"{currentQuestion.correctAnswer}"</p>
+                    <p className="text-gray-800 dark:text-gray-200 italic mb-2">"{currentQuestion.options[currentQuestion.correctAnswer]}"</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{currentQuestion.explanation}</p>
                   </div>
                 )}
