@@ -122,6 +122,7 @@ The application is designed as a mobile-first progressive web app with a maximum
 - June 18, 2025: Fixed voice cutting issues - improved to browser synthesis 0.8 rate, normal 1.0x playback speed for smooth, clear speech without distortion
 - June 18, 2025: Removed conversation gaps - reduced all delays from 500ms to 100ms for smooth, natural flow between officer questions and driver responses
 - June 18, 2025: Eliminated all conversation delays - removed all timeouts for completely seamless officer-driver conversation flow with zero gaps
+- June 18, 2025: Made driver responses completely silent - only officer questions use professional voice over, driver responses show as text only with no audio delays
 
 ## User Preferences
 
