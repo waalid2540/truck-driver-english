@@ -271,9 +271,9 @@ export default function DotPractice() {
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
-          // Auto-start listening after officer speaks
+          // Auto-start listening after officer speaks with minimal delay
           if (isAudioEnabled && !userResponse) {
-            setTimeout(() => startListening(), 500);
+            setTimeout(() => startListening(), 100);
           }
         };
         
@@ -501,11 +501,11 @@ export default function DotPractice() {
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
-          // Auto-advance to next question after driver response is spoken
+          // Auto-advance to next question after driver response with minimal delay
           if (autoPlay && questions) {
             setTimeout(() => {
               handleNextQuestion();
-            }, 500);
+            }, 100);
           }
         };
         
@@ -594,7 +594,7 @@ export default function DotPractice() {
         if (autoPlay && questions) {
           setTimeout(() => {
             handleNextQuestion();
-          }, 500);
+          }, 100);
         }
       };
       
