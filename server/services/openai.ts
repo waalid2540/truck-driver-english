@@ -193,8 +193,8 @@ export async function generateConversationResponse(
   // Merge current session history with persistent history
   const recentHistory = fullHistory.slice(-20); // Keep last 20 messages for context
   
-  console.log(`Generating response for user: ${userId} with ${recentHistory.length} messages of history`);
-  const response = await generateFallbackResponse(userMessage, recentHistory.map(h => ({ role: h.role, content: h.content })), userId);
+  console.log(`Generating response for user: ${userId} with ${recentHistory.length} messages of persistent history`);
+  const response = await generateFallbackResponse(userMessage, recentHistory.map((h: any) => ({ role: h.role, content: h.content })), userId);
   
   // Store AI response in persistent history
   fullHistory.push({ role: 'assistant', content: response.message, timestamp: new Date() });
