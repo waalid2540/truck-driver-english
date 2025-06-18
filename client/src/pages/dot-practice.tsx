@@ -161,8 +161,12 @@ export default function DotPractice() {
     if (questions && questions.length > 0 && autoPlay && !showAnswer && !isSpeaking && !questionsLoading) {
       const timer = setTimeout(() => {
         setShowAnswer(true);
-        // Show answer without speaking driver response
-        // Only officer questions are spoken
+        if (isAudioEnabled && questions[currentQuestionIndex]) {
+          // Play driver response after showing the answer
+          const currentQuestion = questions[currentQuestionIndex];
+          const correctAnswerText = currentQuestion.options[currentQuestion.correctAnswer];
+          speakDriverResponse(correctAnswerText);
+        }
       }, 2000); // 2 seconds after officer question
 
       return () => clearTimeout(timer);
@@ -400,14 +404,128 @@ export default function DotPractice() {
     }
   };
 
-  // Driver responses are silent - only show text, no voice
   const speakDriverResponse = async (text: string) => {
-    // Driver responses are completely silent - text only
-    console.log('Driver response shown silently:', text);
+    if (!isAudioEnabled) return;
     
-    // Immediately proceed to next question without any audio delay
-    if (autoPlay && questions) {
-      handleNextQuestion();
+    setIsSpeaking(true);
+
+    try {
+      // Use professional voice for driver response
+      const response = await fetch('/api/speak-dot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text,
+          voice: 'driver',
+          voiceId: selectedDriverVoice
+        }),
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audio = new Audio(audioUrl);
+        audio.volume = 1.0;
+        audio.playbackRate = 1.0;
+        
+        // Maximum mobile audio amplification for driver
+        try {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const source = audioContext.createMediaElementSource(audio);
+          
+          const preGain = audioContext.createGain();
+          const mainGain = audioContext.createGain();
+          const boostGain = audioContext.createGain();
+          
+          preGain.gain.value = 8.0;
+          mainGain.gain.value = 6.0;
+          boostGain.gain.value = 4.0;
+          
+          const compressor = audioContext.createDynamicsCompressor();
+          compressor.threshold.value = -12;
+          compressor.knee.value = 30;
+          compressor.ratio.value = 20;
+          
+          source.connect(preGain);
+          preGain.connect(mainGain);
+          mainGain.connect(boostGain);
+          boostGain.connect(compressor);
+          compressor.connect(audioContext.destination);
+          
+          if (audioContext.state === 'suspended') {
+            audioContext.resume();
+          }
+          
+          console.log('Applied maximum driver mobile amplification: 19,200% total gain');
+        } catch (error) {
+          console.log('Driver amplification unavailable:', error);
+        }
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          // Move to next question after driver speaks
+          if (autoPlay && questions) {
+            handleNextQuestion();
+          }
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        audio.muted = false;
+        audio.preload = 'auto';
+        await audio.play();
+        return;
+      }
+    } catch (error) {
+      console.log('Driver voice service unavailable, using browser fallback');
+    }
+
+    // Browser synthesis fallback for driver
+    if (synthRef.current) {
+      synthRef.current.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.8;
+      utterance.pitch = 0.8;
+      utterance.volume = 1.0;
+      utterance.lang = 'en-US';
+      
+      const voices = synthRef.current.getVoices();
+      const maleVoices = voices.filter(voice => 
+        voice.lang.startsWith('en') && 
+        !voice.name.toLowerCase().includes('female')
+      );
+      
+      const driverVoice = maleVoices.find(voice => 
+        voice.name.toLowerCase().includes('daniel') ||
+        voice.name.toLowerCase().includes('alex')
+      ) || maleVoices[1] || maleVoices[0] || voices[0];
+      
+      if (driverVoice) {
+        utterance.voice = driverVoice;
+      }
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        if (autoPlay && questions) {
+          handleNextQuestion();
+        }
+      };
+      
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+      };
+      
+      synthRef.current.speak(utterance);
+    } else {
+      setIsSpeaking(false);
     }
   };
 
