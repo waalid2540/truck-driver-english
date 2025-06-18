@@ -526,18 +526,30 @@ export default function DotPractice() {
       console.log('GTTS not available for driver, using browser synthesis fallback');
     }
 
-    // Fallback to browser synthesis
+    // Fallback to browser synthesis with mobile compatibility
     if (synthRef.current) {
       synthRef.current.cancel();
       
+      // Wait for voices to load on mobile
+      let voices = synthRef.current.getVoices();
+      if (voices.length === 0) {
+        synthRef.current.addEventListener('voiceschanged', () => {
+          voices = synthRef.current.getVoices();
+        });
+        // Small delay for mobile voice loading
+        await new Promise(resolve => setTimeout(resolve, 100));
+        voices = synthRef.current.getVoices();
+      }
+      
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.3;  // Very slow speech for maximum practice clarity
-      utterance.pitch = 0.7; // Slightly higher than officer but still male
+      utterance.pitch = 0.8;
       utterance.volume = 1.0;
+      utterance.lang = 'en-US';
       
-      const voices = synthRef.current.getVoices();
+      console.log('Driver response text:', text);
       
-      // Filter out all female voices and prioritize male voices for driver
+      // Find best male voice for driver (different from officer)
       const maleVoices = voices.filter(voice => 
         voice.lang.startsWith('en') && 
         !voice.name.toLowerCase().includes('female') &&
@@ -546,27 +558,32 @@ export default function DotPractice() {
         !voice.name.toLowerCase().includes('karen') &&
         !voice.name.toLowerCase().includes('susan') &&
         !voice.name.toLowerCase().includes('victoria') &&
-        !voice.name.toLowerCase().includes('siri')
+        !voice.name.toLowerCase().includes('zoe')
       );
       
-      const driverVoice = maleVoices.find(voice => 
-        voice.name.toLowerCase().includes('male') ||
+      // Use different voice from officer
+      const bestVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes('google male') ||
+        voice.name.toLowerCase().includes('android male')
+      ) || maleVoices.find(voice => 
+        voice.name.toLowerCase().includes('daniel') ||
+        voice.name.toLowerCase().includes('alex') ||
+        voice.name.toLowerCase().includes('tom') ||
         voice.name.toLowerCase().includes('david') ||
-        voice.name.toLowerCase().includes('michael') ||
-        voice.name.toLowerCase().includes('john') ||
-        voice.name.toLowerCase().includes('mark') ||
-        voice.name.toLowerCase().includes('james') ||
-        voice.name.toLowerCase().includes('robert')
-      ) || maleVoices[1] || maleVoices[0] || voices.find(voice => voice.lang.startsWith('en'));
+        voice.name.toLowerCase().includes('ryan')
+      ) || maleVoices[1] || maleVoices[0] || voices[0];
       
-      if (driverVoice) {
-        utterance.voice = driverVoice;
-        console.log('Driver voice selected:', driverVoice.name);
-      } else {
-        console.log('No suitable male driver voice found, using default');
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+        console.log('Driver voice selected:', bestVoice.name);
       }
       
+      utterance.onstart = () => {
+        console.log('Driver speech synthesis started');
+      };
+      
       utterance.onend = () => {
+        console.log('Driver speech synthesis completed');
         setIsSpeaking(false);
         if (autoPlay && questions) {
           setTimeout(() => {
@@ -575,12 +592,41 @@ export default function DotPractice() {
         }
       };
       
-      utterance.onerror = () => {
+      utterance.onerror = (event) => {
+        console.log('Driver speech synthesis error:', event.error);
         setIsSpeaking(false);
       };
       
-      synthRef.current.speak(utterance);
+      // Mobile-specific speech synthesis fixes
+      try {
+        // Clear any pending speech
+        if (synthRef.current.speaking) {
+          synthRef.current.cancel();
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Resume if paused
+        if (synthRef.current.paused) {
+          synthRef.current.resume();
+        }
+        
+        console.log('Starting driver response speech synthesis');
+        synthRef.current.speak(utterance);
+        
+        // Mobile workaround for driver voice
+        setTimeout(() => {
+          if (!synthRef.current.speaking && text.length > 0) {
+            console.log('Driver speech may have failed, retrying...');
+            synthRef.current.speak(utterance);
+          }
+        }, 500);
+        
+      } catch (synthError) {
+        console.log('Driver speech synthesis failed:', synthError);
+        setIsSpeaking(false);
+      }
     } else {
+      console.log('Speech synthesis not available for driver');
       setIsSpeaking(false);
     }
   };
@@ -643,7 +689,7 @@ export default function DotPractice() {
     
     if (questions && isAudioEnabled && questions[currentQuestionIndex]) {
       const currentQuestion = questions[currentQuestionIndex];
-      setTimeout(() => speakDriverResponse(currentQuestion.correctAnswer), 500);
+      setTimeout(() => speakDriverResponse(currentQuestion.options[currentQuestion.correctAnswer]), 500);
     }
   };
 
