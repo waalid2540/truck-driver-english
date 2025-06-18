@@ -1,10 +1,26 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User table with Replit Auth and Stripe integration
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  id: varchar("id").primaryKey().notNull(), // Changed to varchar for Replit user IDs
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  name: text("name"),
   experienceLevel: text("experience_level").notNull().default("beginner"),
   practiceStreak: integer("practice_streak").notNull().default(0),
   totalSessions: integer("total_sessions").notNull().default(0),
@@ -12,7 +28,13 @@ export const users = pgTable("users", {
   voicePractice: boolean("voice_practice").notNull().default(false),
   sessionDuration: integer("session_duration").notNull().default(10),
   darkMode: boolean("dark_mode").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Stripe integration fields
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionStatus: varchar("subscription_status").default("free"), // free, active, canceled, past_due
+  subscriptionEndDate: timestamp("subscription_end_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const dotCategories = pgTable("dot_categories", {
@@ -54,8 +76,8 @@ export const chatMessages = pgTable("chat_messages", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertDotCategorySchema = createInsertSchema(dotCategories).omit({
@@ -79,6 +101,7 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 
 export type DotCategory = typeof dotCategories.$inferSelect;
 export type InsertDotCategory = z.infer<typeof insertDotCategorySchema>;
