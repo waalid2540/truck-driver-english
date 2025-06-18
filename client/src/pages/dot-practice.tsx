@@ -166,6 +166,36 @@ export default function DotPractice() {
         const audio = new Audio(audioUrl);
         audio.volume = 1.0;
         
+        // Maximum mobile volume boost with Web Audio API
+        try {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const source = audioContext.createMediaElementSource(audio);
+          const gainNode = audioContext.createGain();
+          const compressor = audioContext.createDynamicsCompressor();
+          
+          // Extreme gain boost for mobile devices
+          gainNode.gain.value = 8.0; // 800% volume boost
+          
+          // Aggressive compressor for maximum perceived loudness
+          compressor.threshold.value = -20;
+          compressor.knee.value = 40;
+          compressor.ratio.value = 20;
+          compressor.attack.value = 0.001;
+          compressor.release.value = 0.1;
+          
+          // Connect: source -> gain -> compressor -> output
+          source.connect(gainNode);
+          gainNode.connect(compressor);
+          compressor.connect(audioContext.destination);
+          
+          // Force audio context activation
+          if (audioContext.state === 'suspended') {
+            audioContext.resume();
+          }
+        } catch (error) {
+          console.log('Mobile volume boost unavailable:', error);
+        }
+        
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
@@ -268,6 +298,36 @@ export default function DotPractice() {
         
         const audio = new Audio(audioUrl);
         audio.volume = 1.0;
+        
+        // Maximum mobile volume boost with Web Audio API for driver
+        try {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const source = audioContext.createMediaElementSource(audio);
+          const gainNode = audioContext.createGain();
+          const compressor = audioContext.createDynamicsCompressor();
+          
+          // Extreme gain boost for mobile devices
+          gainNode.gain.value = 8.0; // 800% volume boost
+          
+          // Aggressive compressor for maximum perceived loudness
+          compressor.threshold.value = -20;
+          compressor.knee.value = 40;
+          compressor.ratio.value = 20;
+          compressor.attack.value = 0.001;
+          compressor.release.value = 0.1;
+          
+          // Connect: source -> gain -> compressor -> output
+          source.connect(gainNode);
+          gainNode.connect(compressor);
+          compressor.connect(audioContext.destination);
+          
+          // Force audio context activation
+          if (audioContext.state === 'suspended') {
+            audioContext.resume();
+          }
+        } catch (error) {
+          console.log('Mobile driver volume boost unavailable:', error);
+        }
         
         audio.onended = () => {
           setIsSpeaking(false);
