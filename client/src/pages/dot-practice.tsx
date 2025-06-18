@@ -166,51 +166,56 @@ export default function DotPractice() {
         const audio = new Audio(audioUrl);
         audio.volume = 1.0;
         
-        // Extreme mobile volume amplification system
+        // High-quality mobile audio amplification system
         try {
           const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
           const source = audioContext.createMediaElementSource(audio);
           
-          // Multi-stage gain amplification
+          // Quality-focused gain staging
           const preGain = audioContext.createGain();
           const mainGain = audioContext.createGain();
-          const postGain = audioContext.createGain();
           
-          // Triple gain staging for maximum amplification
-          preGain.gain.value = 10.0;   // 1000% pre-amplification
-          mainGain.gain.value = 5.0;   // 500% main amplification
-          postGain.gain.value = 2.0;   // 200% post-amplification
+          // Balanced amplification for clarity
+          preGain.gain.value = 4.0;    // 400% pre-amplification
+          mainGain.gain.value = 3.5;   // 350% main amplification
           
-          // Aggressive limiter to prevent distortion
+          // Gentle compression for clarity preservation
           const compressor = audioContext.createDynamicsCompressor();
-          compressor.threshold.value = -10;
-          compressor.knee.value = 0;
-          compressor.ratio.value = 20;
-          compressor.attack.value = 0.001;
-          compressor.release.value = 0.01;
+          compressor.threshold.value = -18;
+          compressor.knee.value = 15;
+          compressor.ratio.value = 4;
+          compressor.attack.value = 0.01;
+          compressor.release.value = 0.5;
           
-          // High-frequency enhancer for clarity
-          const filter = audioContext.createBiquadFilter();
-          filter.type = 'highshelf';
-          filter.frequency.value = 2000;
-          filter.gain.value = 12;
+          // Speech clarity enhancer
+          const speechFilter = audioContext.createBiquadFilter();
+          speechFilter.type = 'peaking';
+          speechFilter.frequency.value = 2500;  // Optimal speech frequency
+          speechFilter.Q.value = 2.0;
+          speechFilter.gain.value = 4;
           
-          // Connect multi-stage amplification chain
+          // High-frequency roll-off for noise reduction
+          const noiseFilter = audioContext.createBiquadFilter();
+          noiseFilter.type = 'lowpass';
+          noiseFilter.frequency.value = 8000;
+          noiseFilter.Q.value = 1.0;
+          
+          // Connect optimized audio chain: source -> preGain -> speechFilter -> mainGain -> noiseFilter -> compressor -> output
           source.connect(preGain);
-          preGain.connect(mainGain);
-          mainGain.connect(postGain);
-          postGain.connect(filter);
-          filter.connect(compressor);
+          preGain.connect(speechFilter);
+          speechFilter.connect(mainGain);
+          mainGain.connect(noiseFilter);
+          noiseFilter.connect(compressor);
           compressor.connect(audioContext.destination);
           
-          // Force maximum mobile audio activation
+          // Ensure audio context is active
           if (audioContext.state === 'suspended') {
             audioContext.resume();
           }
           
-          console.log('Applied extreme mobile amplification: 10000% total gain boost');
+          console.log('Applied high-quality mobile amplification: 1400% gain with clarity optimization');
         } catch (error) {
-          console.log('Advanced mobile amplification unavailable:', error);
+          console.log('Quality mobile amplification unavailable:', error);
         }
         
         audio.onended = () => {
@@ -316,51 +321,56 @@ export default function DotPractice() {
         const audio = new Audio(audioUrl);
         audio.volume = 1.0;
         
-        // Extreme mobile volume amplification system for driver
+        // High-quality mobile audio amplification system for driver
         try {
           const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
           const source = audioContext.createMediaElementSource(audio);
           
-          // Multi-stage gain amplification
+          // Quality-focused gain staging
           const preGain = audioContext.createGain();
           const mainGain = audioContext.createGain();
-          const postGain = audioContext.createGain();
           
-          // Triple gain staging for maximum amplification
-          preGain.gain.value = 10.0;   // 1000% pre-amplification
-          mainGain.gain.value = 5.0;   // 500% main amplification
-          postGain.gain.value = 2.0;   // 200% post-amplification
+          // Balanced amplification for clarity
+          preGain.gain.value = 4.0;    // 400% pre-amplification
+          mainGain.gain.value = 3.5;   // 350% main amplification
           
-          // Aggressive limiter to prevent distortion
+          // Gentle compression for clarity preservation
           const compressor = audioContext.createDynamicsCompressor();
-          compressor.threshold.value = -10;
-          compressor.knee.value = 0;
-          compressor.ratio.value = 20;
-          compressor.attack.value = 0.001;
-          compressor.release.value = 0.01;
+          compressor.threshold.value = -18;
+          compressor.knee.value = 15;
+          compressor.ratio.value = 4;
+          compressor.attack.value = 0.01;
+          compressor.release.value = 0.5;
           
-          // High-frequency enhancer for clarity
-          const filter = audioContext.createBiquadFilter();
-          filter.type = 'highshelf';
-          filter.frequency.value = 2000;
-          filter.gain.value = 12;
+          // Speech clarity enhancer
+          const speechFilter = audioContext.createBiquadFilter();
+          speechFilter.type = 'peaking';
+          speechFilter.frequency.value = 2500;  // Optimal speech frequency
+          speechFilter.Q.value = 2.0;
+          speechFilter.gain.value = 4;
           
-          // Connect multi-stage amplification chain
+          // High-frequency roll-off for noise reduction
+          const noiseFilter = audioContext.createBiquadFilter();
+          noiseFilter.type = 'lowpass';
+          noiseFilter.frequency.value = 8000;
+          noiseFilter.Q.value = 1.0;
+          
+          // Connect optimized audio chain: source -> preGain -> speechFilter -> mainGain -> noiseFilter -> compressor -> output
           source.connect(preGain);
-          preGain.connect(mainGain);
-          mainGain.connect(postGain);
-          postGain.connect(filter);
-          filter.connect(compressor);
+          preGain.connect(speechFilter);
+          speechFilter.connect(mainGain);
+          mainGain.connect(noiseFilter);
+          noiseFilter.connect(compressor);
           compressor.connect(audioContext.destination);
           
-          // Force maximum mobile audio activation
+          // Ensure audio context is active
           if (audioContext.state === 'suspended') {
             audioContext.resume();
           }
           
-          console.log('Applied extreme driver mobile amplification: 10000% total gain boost');
+          console.log('Applied high-quality driver mobile amplification: 1400% gain with clarity optimization');
         } catch (error) {
-          console.log('Advanced driver mobile amplification unavailable:', error);
+          console.log('Quality driver mobile amplification unavailable:', error);
         }
         
         audio.onended = () => {
