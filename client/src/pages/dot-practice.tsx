@@ -146,46 +146,8 @@ export default function DotPractice() {
     const currentQuestion = questions[currentQuestionIndex];
     setIsSpeaking(true);
 
-    try {
-      // Try GTTS first for better mobile volume
-      const response = await fetch('/api/speak-dot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: currentQuestion.question,
-          voice: 'officer'
-        }),
-      });
-
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        const audio = new Audio(audioUrl);
-        audio.volume = 1.0;
-        
-        audio.onended = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-          // Auto-start listening after officer speaks
-          if (isAudioEnabled && !userResponse) {
-            setTimeout(() => startListening(), 500);
-          }
-        };
-        
-        audio.onerror = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        await audio.play();
-        return;
-      }
-    } catch (error) {
-      console.log('GTTS not available, using browser synthesis');
-    }
+    // Skip GTTS for now and use browser synthesis with forced male voices
+    console.log('Using browser synthesis for guaranteed male voice control');
 
     // Fallback to browser synthesis
     if (synthRef.current) {
@@ -197,14 +159,34 @@ export default function DotPractice() {
       utterance.volume = 1.0;
       
       const voices = synthRef.current.getVoices();
-      const bestVoice = voices.find(voice => 
+      console.log('Available voices:', voices.map(v => v.name));
+      
+      // Filter out all female voices and prioritize male voices
+      const maleVoices = voices.filter(voice => 
         voice.lang.startsWith('en') && 
-        (voice.name.includes('Male') || voice.name.includes('Daniel') || voice.name.includes('Alex') || 
-         voice.name.includes('Tom') || voice.name.includes('Fred') || voice.name.includes('Google US English'))
-      ) || voices.find(voice => voice.lang.startsWith('en'));
+        !voice.name.toLowerCase().includes('female') &&
+        !voice.name.toLowerCase().includes('woman') &&
+        !voice.name.toLowerCase().includes('samantha') &&
+        !voice.name.toLowerCase().includes('karen') &&
+        !voice.name.toLowerCase().includes('susan') &&
+        !voice.name.toLowerCase().includes('victoria')
+      );
+      
+      const bestVoice = maleVoices.find(voice => 
+        voice.name.toLowerCase().includes('male') ||
+        voice.name.toLowerCase().includes('daniel') ||
+        voice.name.toLowerCase().includes('alex') ||
+        voice.name.toLowerCase().includes('tom') ||
+        voice.name.toLowerCase().includes('fred') ||
+        voice.name.toLowerCase().includes('david') ||
+        voice.name.toLowerCase().includes('google')
+      ) || maleVoices[0] || voices.find(voice => voice.lang.startsWith('en'));
       
       if (bestVoice) {
         utterance.voice = bestVoice;
+        console.log('Officer voice selected:', bestVoice.name);
+      } else {
+        console.log('No suitable male voice found, using default');
       }
       
       utterance.onend = () => {
@@ -229,48 +211,8 @@ export default function DotPractice() {
     
     setIsSpeaking(true);
 
-    try {
-      // Try GTTS first for better mobile volume
-      const response = await fetch('/api/speak-dot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text,
-          voice: 'driver'
-        }),
-      });
-
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        const audio = new Audio(audioUrl);
-        audio.volume = 1.0;
-        
-        audio.onended = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-          // Auto-advance to next question after driver response is spoken
-          if (autoPlay && questions) {
-            setTimeout(() => {
-              handleNextQuestion();
-            }, 500);
-          }
-        };
-        
-        audio.onerror = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        await audio.play();
-        return;
-      }
-    } catch (error) {
-      console.log('GTTS not available for driver, using browser synthesis');
-    }
+    // Skip GTTS for now and use browser synthesis with forced male voices
+    console.log('Using browser synthesis for guaranteed male driver voice control');
 
     // Fallback to browser synthesis
     if (synthRef.current) {
@@ -282,14 +224,34 @@ export default function DotPractice() {
       utterance.volume = 1.0;
       
       const voices = synthRef.current.getVoices();
-      const driverVoice = voices.find(voice => 
+      
+      // Filter out all female voices and prioritize male voices for driver
+      const maleVoices = voices.filter(voice => 
         voice.lang.startsWith('en') && 
-        (voice.name.includes('Male') || voice.name.includes('David') || voice.name.includes('Michael') || 
-         voice.name.includes('John') || voice.name.includes('Mark') || voice.name.includes('Google US English'))
-      ) || voices.find(voice => voice.lang.startsWith('en') && voice.name !== utterance.voice?.name);
+        !voice.name.toLowerCase().includes('female') &&
+        !voice.name.toLowerCase().includes('woman') &&
+        !voice.name.toLowerCase().includes('samantha') &&
+        !voice.name.toLowerCase().includes('karen') &&
+        !voice.name.toLowerCase().includes('susan') &&
+        !voice.name.toLowerCase().includes('victoria') &&
+        !voice.name.toLowerCase().includes('siri')
+      );
+      
+      const driverVoice = maleVoices.find(voice => 
+        voice.name.toLowerCase().includes('male') ||
+        voice.name.toLowerCase().includes('david') ||
+        voice.name.toLowerCase().includes('michael') ||
+        voice.name.toLowerCase().includes('john') ||
+        voice.name.toLowerCase().includes('mark') ||
+        voice.name.toLowerCase().includes('james') ||
+        voice.name.toLowerCase().includes('robert')
+      ) || maleVoices[1] || maleVoices[0] || voices.find(voice => voice.lang.startsWith('en'));
       
       if (driverVoice) {
         utterance.voice = driverVoice;
+        console.log('Driver voice selected:', driverVoice.name);
+      } else {
+        console.log('No suitable male driver voice found, using default');
       }
       
       utterance.onend = () => {
