@@ -675,6 +675,16 @@ export default function DotPractice() {
             </Card>
           </div>
         </div>
+
+        {/* Voice Selector Modal */}
+        <VoiceSelector
+          selectedOfficerVoice={selectedOfficerVoice}
+          selectedDriverVoice={selectedDriverVoice}
+          onOfficerVoiceChange={setSelectedOfficerVoice}
+          onDriverVoiceChange={setSelectedDriverVoice}
+          isOpen={showVoiceSelector}
+          onClose={() => setShowVoiceSelector(false)}
+        />
       </div>
     );
   }
@@ -904,12 +914,22 @@ export default function DotPractice() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Voice Selector Modal */}
+        <VoiceSelector
+          selectedOfficerVoice={selectedOfficerVoice}
+          selectedDriverVoice={selectedDriverVoice}
+          onOfficerVoiceChange={setSelectedOfficerVoice}
+          onDriverVoiceChange={setSelectedDriverVoice}
+          isOpen={showVoiceSelector}
+          onClose={() => setShowVoiceSelector(false)}
+        />
       </div>
     );
   }
 
   // No questions available
-  return (
+  const noQuestionsView = (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">No conversations available</h2>
@@ -917,8 +937,14 @@ export default function DotPractice() {
           Back to Categories
         </Button>
       </div>
+    </div>
+  );
+
+  return (
+    <>
+      {noQuestionsView}
       
-      {/* Voice Selector Modal */}
+      {/* Voice Selector Modal - Always available */}
       <VoiceSelector
         selectedOfficerVoice={selectedOfficerVoice}
         selectedDriverVoice={selectedDriverVoice}
@@ -927,6 +953,6 @@ export default function DotPractice() {
         isOpen={showVoiceSelector}
         onClose={() => setShowVoiceSelector(false)}
       />
-    </div>
+    </>
   );
 }
