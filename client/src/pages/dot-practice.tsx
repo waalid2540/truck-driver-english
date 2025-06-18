@@ -277,12 +277,12 @@ export default function DotPractice() {
           // Show answer and play driver response after officer finishes
           if (autoPlay && questions[currentQuestionIndex]) {
             setShowAnswer(true);
-            // Small delay to let officer voice complete fully before driver responds
+            // Longer delay to let officer voice complete and user process the question
             setTimeout(() => {
               const currentQuestion = questions[currentQuestionIndex];
               const correctAnswerText = currentQuestion.options[currentQuestion.correctAnswer];
               speakDriverResponse(correctAnswerText);
-            }, 500); // Half second pause between officer and driver
+            }, 2000); // 2 second pause between officer and driver
           }
         };
         
@@ -492,11 +492,11 @@ export default function DotPractice() {
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
-          // Move to next question after driver speaks with proper pause
+          // Move to next question after driver speaks with much longer pause
           if (autoPlay && questions) {
             setTimeout(() => {
               handleNextQuestion();
-            }, 1000); // 1 second pause between driver response and next officer question
+            }, 4000); // 4 second pause between driver response and next officer question
           }
         };
         
