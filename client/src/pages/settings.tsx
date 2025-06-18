@@ -97,6 +97,24 @@ export default function Settings() {
     }
   };
 
+  const handleSignOut = () => {
+    // Clear localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    
+    // Clear query cache
+    queryClient.clear();
+    
+    // Show success message
+    toast({
+      title: "Signed Out",
+      description: "You have been successfully logged out.",
+    });
+    
+    // Reload page to show landing page
+    window.location.reload();
+  };
+
   if (isLoading) {
     return (
       <div className="pb-20 p-4">
@@ -258,6 +276,22 @@ export default function Settings() {
                   <ChevronRight className="h-4 w-4 text-gray-400" />
                 </div>
               </div>
+
+              <button
+                onClick={handleSignOut}
+                className="w-full text-left p-3 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <LogOut className="h-5 w-5 text-red-600" />
+                    <div>
+                      <p className="font-medium text-red-600">Sign Out</p>
+                      <p className="text-sm text-red-500">Log out of your account</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-red-400" />
+                </div>
+              </button>
             </div>
           </CardContent>
         </Card>
