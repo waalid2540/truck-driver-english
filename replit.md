@@ -100,3 +100,5 @@ The application is designed as a mobile-first progressive web app with a maximum
 
 Preferred communication style: Simple, everyday language.
 Design preference: Dark mode enabled by default for better visibility while driving.
+Voice preference: Professional GTTS voices for authentic DOT practice scenarios.
+User feedback: "The app is amazing" - successful implementation of hands-free DOT practice system.
