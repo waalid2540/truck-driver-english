@@ -313,7 +313,7 @@ export default function DotPractice() {
       }
       
       const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
-      utterance.rate = 0.8;
+      utterance.rate = 0.6;  // Slower speech for officer
       utterance.pitch = 0.7;
       utterance.volume = 1.0;
       utterance.lang = 'en-US';
@@ -531,7 +531,7 @@ export default function DotPractice() {
       synthRef.current.cancel();
       
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.7;
+      utterance.rate = 0.6;  // Slower speech for driver
       utterance.pitch = 0.7; // Slightly higher than officer but still male
       utterance.volume = 1.0;
       
