@@ -272,19 +272,30 @@ export default function DotPractice() {
       console.log('GTTS not available, using browser synthesis fallback');
     }
 
-    // Fallback to browser synthesis
+    // Fallback to browser synthesis with mobile compatibility
     if (synthRef.current) {
       synthRef.current.cancel();
       
-      const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
-      utterance.rate = 0.7;
-      utterance.pitch = 0.6; // Lower pitch for deeper male voice
-      utterance.volume = 1.0;
+      // Wait for voices to load on mobile
+      let voices = synthRef.current.getVoices();
+      if (voices.length === 0) {
+        synthRef.current.addEventListener('voiceschanged', () => {
+          voices = synthRef.current.getVoices();
+        });
+        // Small delay for mobile voice loading
+        await new Promise(resolve => setTimeout(resolve, 100));
+        voices = synthRef.current.getVoices();
+      }
       
-      const voices = synthRef.current.getVoices();
+      const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
+      utterance.rate = 0.8;
+      utterance.pitch = 0.7;
+      utterance.volume = 1.0;
+      utterance.lang = 'en-US';
+      
       console.log('Available voices:', voices.map(v => v.name));
       
-      // Filter out all female voices and prioritize male voices
+      // Find best male voice with mobile priority
       const maleVoices = voices.filter(voice => 
         voice.lang.startsWith('en') && 
         !voice.name.toLowerCase().includes('female') &&
@@ -292,32 +303,34 @@ export default function DotPractice() {
         !voice.name.toLowerCase().includes('samantha') &&
         !voice.name.toLowerCase().includes('karen') &&
         !voice.name.toLowerCase().includes('susan') &&
-        !voice.name.toLowerCase().includes('victoria')
+        !voice.name.toLowerCase().includes('victoria') &&
+        !voice.name.toLowerCase().includes('zoe')
       );
       
-      const bestVoice = maleVoices.find(voice => 
+      // Prioritize mobile-compatible voices
+      const bestVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes('google male') ||
+        voice.name.toLowerCase().includes('android male')
+      ) || maleVoices.find(voice => 
         voice.name.toLowerCase().includes('male') ||
         voice.name.toLowerCase().includes('daniel') ||
         voice.name.toLowerCase().includes('alex') ||
         voice.name.toLowerCase().includes('tom') ||
         voice.name.toLowerCase().includes('fred') ||
-        voice.name.toLowerCase().includes('david') ||
-        voice.name.toLowerCase().includes('google')
-      ) || maleVoices[0] || voices.find(voice => voice.lang.startsWith('en'));
+        voice.name.toLowerCase().includes('david')
+      ) || maleVoices[0] || voices[0];
       
       if (bestVoice) {
         utterance.voice = bestVoice;
         console.log('Officer voice selected:', bestVoice.name);
-      } else {
-        console.log('No suitable male voice found, using default');
       }
       
       utterance.onstart = () => {
-        console.log('Speech synthesis started');
+        console.log('Speech synthesis started successfully');
       };
       
       utterance.onend = () => {
-        console.log('Speech synthesis ended');
+        console.log('Speech synthesis completed');
         setIsSpeaking(false);
         if (isAudioEnabled && !userResponse) {
           setTimeout(() => startListening(), 500);
@@ -329,17 +342,36 @@ export default function DotPractice() {
         setIsSpeaking(false);
       };
       
-      // Force speech synthesis to work
-      if (synthRef.current.paused) {
-        synthRef.current.resume();
+      // Mobile-specific speech synthesis fixes
+      try {
+        // Clear any pending speech
+        if (synthRef.current.speaking) {
+          synthRef.current.cancel();
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Resume if paused (common mobile issue)
+        if (synthRef.current.paused) {
+          synthRef.current.resume();
+        }
+        
+        console.log('Starting speech synthesis for officer question');
+        synthRef.current.speak(utterance);
+        
+        // Mobile workaround: check if actually speaking after delay
+        setTimeout(() => {
+          if (!synthRef.current.speaking && !utterance.text === '') {
+            console.log('Speech may have failed, retrying...');
+            synthRef.current.speak(utterance);
+          }
+        }, 500);
+        
+      } catch (synthError) {
+        console.log('Speech synthesis failed:', synthError);
+        setIsSpeaking(false);
       }
-      if (synthRef.current.pending) {
-        synthRef.current.cancel();
-      }
-      
-      console.log('Starting speech synthesis for officer');
-      synthRef.current.speak(utterance);
     } else {
+      console.log('Speech synthesis not available');
       setIsSpeaking(false);
     }
   };
