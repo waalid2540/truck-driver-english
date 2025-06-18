@@ -9,6 +9,19 @@ import { generateDOTSpeechElevenLabs, AVAILABLE_VOICES } from "./services/eleven
 import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
+// Stripe integration - will be activated when keys are provided
+let stripe: any = null;
+try {
+  if (process.env.STRIPE_SECRET_KEY) {
+    const Stripe = require('stripe');
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2023-10-16",
+    });
+  }
+} catch (error) {
+  console.log('Stripe not configured - payment features disabled');
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -300,6 +313,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Voice generation error:", error);
       res.status(500).json({ message: "Failed to generate voice: " + (error as Error).message });
+    }
+  });
+
+  // Stripe payment routes
+  app.post("/api/create-payment-intent", async (req, res) => {
+    if (!stripe) {
+      return res.status(503).json({ message: "Payment system not configured" });
+    }
+    
+    try {
+      const { amount } = req.body;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: "usd",
+      });
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      res.status(500).json({ message: "Error creating payment intent: " + error.message });
+    }
+  });
+
+  // Subscription management for premium features
+  app.post('/api/create-subscription', isAuthenticated, async (req: any, res) => {
+    if (!stripe) {
+      return res.status(503).json({ message: "Payment system not configured" });
+    }
+
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (user.stripeSubscriptionId) {
+        const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        res.json({
+          subscriptionId: subscription.id,
+          clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
+        });
+        return;
+      }
+      
+      if (!user.email) {
+        return res.status(400).json({ message: 'No user email on file' });
+      }
+
+      // Create Stripe customer
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.name || `${user.firstName} ${user.lastName}`.trim(),
+      });
+
+      // Update user with Stripe customer ID
+      await storage.updateUser(userId, { stripeCustomerId: customer.id });
+
+      // Create subscription (you'll need to set STRIPE_PRICE_ID in environment)
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{
+          price: process.env.STRIPE_PRICE_ID || 'price_1234567890', // Replace with actual price ID
+        }],
+        payment_behavior: 'default_incomplete',
+        expand: ['latest_invoice.payment_intent'],
+      });
+
+      // Update user with subscription ID
+      await storage.updateUser(userId, { 
+        stripeSubscriptionId: subscription.id,
+        subscriptionStatus: 'active'
+      });
+  
+      res.json({
+        subscriptionId: subscription.id,
+        clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
+      });
+    } catch (error: any) {
+      return res.status(400).json({ error: { message: error.message } });
+    }
+  });
+
+  // Check subscription status
+  app.get('/api/subscription-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        subscriptionStatus: user.subscriptionStatus || 'free',
+        hasActiveSubscription: user.subscriptionStatus === 'active'
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to check subscription status" });
     }
   });
 
