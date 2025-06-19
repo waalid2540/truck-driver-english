@@ -87,21 +87,138 @@ export default function Subscribe() {
     }
   };
 
+  // Show demo version for non-authenticated users
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <Crown className="w-12 h-12 mx-auto mb-4 text-yellow-500" />
-            <h2 className="text-xl font-bold mb-2">Please Log In</h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-4">
-              You need to be logged in to manage your subscription.
-            </p>
-            <Link to="/api/login">
-              <Button>Log In</Button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-8">
+            <Link to="/">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
             </Link>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-2">
+              <Crown className="w-6 h-6 text-yellow-500" />
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Premium Subscription</h1>
+            </div>
+          </div>
+
+          {/* Demo Usage */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5" />
+                Conversation Usage
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">
+                    0 of 10 conversations used
+                  </span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                    0%
+                  </span>
+                </div>
+                <Progress value={0} className="h-2" />
+              </div>
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <p className="text-blue-800 dark:text-blue-200 font-medium">
+                  Sign up to start your 10 free AI conversations!
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pricing Plans */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Free Plan */}
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Free Plan
+                  <span className="text-lg font-bold">$0</span>
+                </CardTitle>
+                <CardDescription>Perfect for trying out the app</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>10 AI conversations</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Unlimited DOT practice</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Basic voice features</span>
+                  </li>
+                </ul>
+                <Link to="/api/login">
+                  <Button variant="outline" className="w-full">
+                    Sign Up for Free
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Premium Plan */}
+            <Card className="border-2 border-yellow-500 relative">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  Most Popular
+                </span>
+              </div>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-yellow-500" />
+                    Premium Plan
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold">$9.99</span>
+                    <span className="text-slate-600 dark:text-slate-400">/month</span>
+                  </div>
+                </CardTitle>
+                <CardDescription>Unlimited access for professional drivers</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-yellow-500" />
+                    <span className="font-medium">Unlimited AI conversations</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Unlimited DOT practice</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Premium voice features</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Advanced analytics</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Priority support</span>
+                  </li>
+                </ul>
+                <Link to="/api/login">
+                  <Button className="w-full">
+                    Sign Up for Premium - $9.99/month
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
