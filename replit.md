@@ -138,6 +138,7 @@ The application is designed as a mobile-first progressive web app with a maximum
 - June 19, 2025: Integrated Stripe payment system with $9.99/month subscription - users get 10 free AI conversations then upgrade for unlimited access, DOT practice remains free
 - June 19, 2025: Connected Stripe subscriptions with authentication system - fixed authentication middleware to properly handle subscription endpoints and payment processing
 - June 19, 2025: Implemented ChatGPT's authentication solution - added proper token middleware and subscription check endpoints for reliable subscription status display
+- June 19, 2025: Fixed authentication system with JWT tokens and Replit Database - replaced custom tokens with proper JWT authentication, users stored with key format user-{id} for reliable subscription access
 
 ## User Preferences
 

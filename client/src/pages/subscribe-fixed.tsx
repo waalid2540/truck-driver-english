@@ -21,7 +21,7 @@ export default function SubscribeFixed() {
       return;
     }
 
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("auth_token");
     if (!token) {
       setSubscribed(false);
       setLoading(false);
@@ -46,7 +46,7 @@ export default function SubscribeFixed() {
   }, [isAuthenticated]);
 
   const handleUpgrade = async () => {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("auth_token");
     if (!token) {
       toast({
         title: "Authentication Required",
