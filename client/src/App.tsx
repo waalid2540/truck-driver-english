@@ -8,7 +8,7 @@ import Home from "@/pages/home";
 import DotPracticeFixed from "@/pages/dot-practice-fixed";
 import ConversationalCoach from "@/pages/conversational-coach";
 import Settings from "@/pages/settings";
-import Subscribe from "@/pages/subscribe";
+import Subscribe from "@/pages/subscribe-new";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";

@@ -1,11 +1,15 @@
 import { useStripe, Elements, PaymentElement, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { useEffect, useState } from 'react';
+import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Crown, Zap } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Check, Crown, Zap, MessageCircle, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 
 // Load Stripe - will be activated when keys are provided
 let stripePromise: any = null;

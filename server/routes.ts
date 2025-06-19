@@ -8,21 +8,17 @@ import { generateDOTSpeech } from "./services/gtts-service";
 import { generateDOTSpeechElevenLabs, AVAILABLE_VOICES } from "./services/elevenlabs-service";
 import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import Stripe from 'stripe';
 
 // Stripe integration
-let stripe: any = null;
-try {
-  if (process.env.STRIPE_SECRET_KEY) {
-    const Stripe = require('stripe');
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-10-16",
-    });
-    console.log('Stripe configured successfully');
-  } else {
-    console.log('Stripe not configured - payment features disabled');
-  }
-} catch (error) {
-  console.log('Stripe configuration error:', error);
+let stripe: Stripe | null = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2025-05-28.basil",
+  });
+  console.log('Stripe configured successfully');
+} else {
+  console.log('Stripe not configured - payment features disabled');
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
