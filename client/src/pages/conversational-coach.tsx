@@ -3,10 +3,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Bot, Send, Mic, MicOff, Volume2, Upload } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, Bot, Send, Mic, MicOff, Volume2, Upload, Crown, MessageCircle } from "lucide-react";
 import ChatMessage from "@/components/chat-message";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Message {
   id: string;
@@ -28,6 +31,7 @@ export default function ConversationalCoach() {
   const [isListening, setIsListening] = useState(false);
   const [isAutoReading, setIsAutoReading] = useState(true);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
+  const { isAuthenticated } = useAuth();
   const [isRecordingSupported, setIsRecordingSupported] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
