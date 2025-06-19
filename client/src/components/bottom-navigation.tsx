@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Truck, ClipboardCheck, MessageCircle, Settings } from "lucide-react";
+import { Truck, ClipboardCheck, MessageCircle, Settings, Crown } from "lucide-react";
 
 export default function BottomNavigation() {
   const [location] = useLocation();
@@ -8,6 +8,7 @@ export default function BottomNavigation() {
     { path: "/", icon: Truck, label: "Home" },
     { path: "/dot-practice", icon: ClipboardCheck, label: "DOT Practice" },
     { path: "/coach", icon: MessageCircle, label: "Coach" },
+    { path: "/subscribe", icon: Crown, label: "Premium" },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];
 
