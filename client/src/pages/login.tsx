@@ -31,9 +31,7 @@ export default function Login({ onSuccess, onSwitchToSignup }: LoginProps) {
 
       if (response.ok) {
         const user = await response.json();
-        localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('token', user.token);
-        localStorage.setItem('authToken', user.token);
+        localStorage.setItem('auth_token', user.token);
         onSuccess(user);
         toast({
           title: "Welcome back!",

@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
+import jwt from "jsonwebtoken";
+import Database from "@replit/database";
 import { storage } from "./storage";
 import { generateConversationResponse, generatePracticeScenario } from "./services/openai";
 import { transcribeAudio, generateSpeech } from "./services/whisper";
@@ -9,6 +11,12 @@ import { generateDOTSpeechElevenLabs, AVAILABLE_VOICES } from "./services/eleven
 import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import Stripe from 'stripe';
+
+// Initialize Replit Database
+const db = new Database();
+
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || "english-coach-secret-key-2025";
 
 // Stripe integration
 let stripe: Stripe | null = null;
@@ -93,13 +101,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For demo purposes, accept any password
       // In production, you'd verify against hashed password
       
-      // Generate simple token
-      const token = `token_${user.id}_${Date.now()}`;
+      // Generate JWT token
+      const token = jwt.sign(
+        { id: user.id },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      // Store user in Replit Database with correct key format
+      await db.set(`user-${user.id}`, {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        subscription: user.subscriptionStatus || "inactive",
+        conversationsUsed: user.conversationsUsed || 0,
+        conversationLimit: user.conversationLimit || 10,
+      });
+
+      console.log(`User stored in DB with key: user-${user.id}`);
       
       res.json({
-        ...user,
         token,
-        message: "Logged in successfully"
+        message: "Login successful"
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -426,31 +451,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Authentication middleware for subscription routes
+  // JWT Authentication middleware
   const authenticateToken = async (req: any, res: any, next: any) => {
+    console.log("Auth Header:", req.headers.authorization);
+    
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.status(401).json({ error: "No token provided" });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    if (!token || !token.startsWith('token_')) {
+    const token = authHeader.split(" ")[1];
+    if (!token) {
       return res.status(401).json({ error: "Invalid token format" });
     }
 
     try {
-      // Extract user ID from token
-      const userId = token.split('_')[1];
-      const user = await storage.getUser(userId);
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      console.log("Decoded ID:", decoded.id);
+      
+      const user = await db.get(`user-${decoded.id}`);
+      console.log("User from DB:", user);
       
       if (!user) {
+        // Debug: List all keys in database
+        const keys = await db.list();
+        console.log("Replit DB Keys:", keys);
         return res.status(403).json({ error: "User not found" });
       }
 
       req.user = user;
-      req.userId = userId;
+      req.userId = decoded.id;
       next();
     } catch (err) {
+      console.error("Token verification error:", err);
       return res.status(403).json({ error: "Invalid token" });
     }
   };

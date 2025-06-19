@@ -1,0 +1,61 @@
+🔧 Paste This into Replit AI:
+⚠️ Please fix the authentication system for my Stripe subscription app using Replit Database.
+✅ Here's what’s wrong:
+Users are getting a 403 "User not found" error.
+The frontend is storing an auth token, but the backend cannot find the user.
+✅ Here's the full fix I need you to do step by step:
+Token Generation:
+In the login or signup route, generate the JWT token like this:
+import jwt from "jsonwebtoken";
+
+const token = jwt.sign(
+  { id: userId }, // userId must be string or number
+  process.env.JWT_SECRET,
+  { expiresIn: "7d" }
+);
+
+res.json({ token }); // send to frontend
+Store the User in Replit Database:
+Use this format so the key matches the token:
+await db.set(`user-${userId}`, {
+  id: userId,
+  email: userEmail,
+  subscription: "active", // or "inactive"
+});
+Backend Middleware Fix (routes.ts):
+In the middleware that verifies tokens, do the following:
+const authHeader = req.headers.authorization;
+const token = authHeader?.split(" ")[1];
+const decoded = jwt.verify(token, process.env.JWT_SECRET);
+const user = await db.get(`user-${decoded.id}`);
+
+if (!user) return res.status(403).json({ error: "User not found" });
+
+req.user = user;
+req.userId = decoded.id;
+next();
+Check Frontend Token Handling (subscribe-new.tsx):
+Make sure the token is saved and sent correctly:
+localStorage.setItem("auth_token", response.token); // during login
+
+const token = localStorage.getItem("auth_token");
+fetch("http://localhost:3000/api/auth-check/check-subscription", {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
+Debugging (Optional but helpful):
+Add logging in the backend to catch any issues:
+console.log("Auth Header:", req.headers.authorization);
+console.log("Decoded ID:", decoded.id);
+console.log("User from DB:", user);
+List Users in DB (For Testing):
+Add this to see what’s in Replit Database:
+const keys = await db.list();
+console.log("Replit DB Keys:", keys);
+✅ Goal:
+Let the backend find the correct user using the decoded token
+Let the frontend detect subscription status using /api/auth-check/check-subscription
+Stop the 403 error
+Show the Stripe UI or “You are subscribed” message properly
+Please implement and test all of this now.
