@@ -426,27 +426,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Check subscription status
-  app.get('/api/subscription-status', async (req, res) => {
-    try {
-      const token = req.headers.authorization?.replace('Bearer ', '');
-      if (!token || !token.startsWith('token_')) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
+  // Authentication middleware for subscription routes
+  const authenticateToken = async (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "No token provided" });
+    }
 
+    const token = authHeader.replace('Bearer ', '');
+    if (!token || !token.startsWith('token_')) {
+      return res.status(401).json({ error: "Invalid token format" });
+    }
+
+    try {
       // Extract user ID from token
       const userId = token.split('_')[1];
       const user = await storage.getUser(userId);
-
+      
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(403).json({ error: "User not found" });
       }
 
+      req.user = user;
+      req.userId = userId;
+      next();
+    } catch (err) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
+  };
+
+  // Check subscription status
+  app.get('/api/auth-check/check-subscription', authenticateToken, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const subscribed = user.subscriptionStatus === 'active';
+      
+      res.json({
+        subscribed,
+        subscriptionStatus: user.subscriptionStatus || 'free',
+        conversationsUsed: user.conversationsUsed || 0,
+        conversationLimit: user.conversationLimit || 10,
+        needsUpgrade: (user.conversationsUsed || 0) >= (user.conversationLimit || 10) && !subscribed
+      });
+    } catch (error) {
+      console.error("Subscription check error:", error);
+      res.status(500).json({ error: "Failed to check subscription" });
+    }
+  });
+
+  // Legacy subscription status endpoint
+  app.get('/api/subscription-status', authenticateToken, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
       res.json({
         subscriptionStatus: user.subscriptionStatus || 'free',
         conversationsUsed: user.conversationsUsed || 0,
         conversationLimit: user.conversationLimit || 10,
-        needsUpgrade: (user.conversationsUsed || 0) >= (user.conversationLimit || 10) && (user.subscriptionStatus === 'free' || !user.subscriptionStatus)
+        needsUpgrade: (user.conversationsUsed || 0) >= (user.conversationLimit || 10) && (user.subscriptionStatus !== 'active')
       });
     } catch (error) {
       console.error("Subscription status error:", error);
@@ -455,24 +492,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Subscription management for premium features
-  app.post('/api/create-subscription', async (req, res) => {
+  app.post('/api/create-subscription', authenticateToken, async (req: any, res) => {
     if (!stripe) {
       return res.status(503).json({ message: "Payment system not configured" });
     }
 
     try {
-      const token = req.headers.authorization?.replace('Bearer ', '');
-      if (!token || !token.startsWith('token_')) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
-      // Extract user ID from token
-      const userId = token.split('_')[1];
-      const user = await storage.getUser(userId);
-
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+      const userId = req.userId;
+      const user = req.user;
 
       if (user.stripeSubscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
