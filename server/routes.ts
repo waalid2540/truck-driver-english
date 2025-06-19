@@ -427,9 +427,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check subscription status
-  app.get('/api/subscription-status', isAuthenticated, async (req: any, res) => {
+  app.get('/api/subscription-status', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token || !token.startsWith('token_')) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Extract user ID from token
+      const userId = token.split('_')[1];
       const user = await storage.getUser(userId);
 
       if (!user) {
@@ -440,21 +446,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionStatus: user.subscriptionStatus || 'free',
         conversationsUsed: user.conversationsUsed || 0,
         conversationLimit: user.conversationLimit || 10,
-        needsUpgrade: (user.conversationsUsed >= user.conversationLimit) && (user.subscriptionStatus === 'free' || !user.subscriptionStatus)
+        needsUpgrade: (user.conversationsUsed || 0) >= (user.conversationLimit || 10) && (user.subscriptionStatus === 'free' || !user.subscriptionStatus)
       });
     } catch (error) {
+      console.error("Subscription status error:", error);
       res.status(500).json({ message: "Failed to get subscription status" });
     }
   });
 
   // Subscription management for premium features
-  app.post('/api/create-subscription', isAuthenticated, async (req: any, res) => {
+  app.post('/api/create-subscription', async (req, res) => {
     if (!stripe) {
       return res.status(503).json({ message: "Payment system not configured" });
     }
 
     try {
-      const userId = req.user.claims.sub;
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token || !token.startsWith('token_')) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Extract user ID from token
+      const userId = token.split('_')[1];
       const user = await storage.getUser(userId);
 
       if (!user) {
@@ -465,7 +478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
         res.json({
           subscriptionId: subscription.id,
-          clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
+          status: subscription.status,
         });
         return;
       }
@@ -486,14 +499,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create $9.99/month price if it doesn't exist
       let priceId = process.env.STRIPE_PRICE_ID;
       if (!priceId) {
+        // First create the product
+        const product = await stripe.products.create({
+          name: 'English Coach Premium',
+        });
+        
+        // Then create the price
         const price = await stripe.prices.create({
           unit_amount: 999, // $9.99 in cents
           currency: 'usd',
           recurring: { interval: 'month' },
-          product_data: {
-            name: 'English Coach Premium',
-            description: 'Unlimited AI conversations for truck drivers',
-          },
+          product: product.id,
         });
         priceId = price.id;
       }
@@ -514,7 +530,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
       res.json({
         subscriptionId: subscription.id,
-        clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
+        status: subscription.status,
+        message: "Subscription created successfully"
       });
     } catch (error: any) {
       return res.status(400).json({ error: { message: error.message } });
