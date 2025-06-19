@@ -9,6 +9,7 @@ import DotPracticeFixed from "@/pages/dot-practice-fixed";
 import ConversationalCoach from "@/pages/conversational-coach";
 import Settings from "@/pages/settings";
 import Subscribe from "@/pages/subscribe-new";
+import Pricing from "@/pages/pricing";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
@@ -54,8 +55,13 @@ function Router() {
       );
     }
 
-    // Show landing page by default
-    return <Landing onGetStarted={() => setShowAuthForm('login')} onSignUp={() => setShowAuthForm('signup')} />;
+    // Show landing page by default with pricing route available
+    return (
+      <Switch>
+        <Route path="/pricing" component={Pricing} />
+        <Route component={() => <Landing onGetStarted={() => setShowAuthForm('login')} onSignUp={() => setShowAuthForm('signup')} />} />
+      </Switch>
+    );
   }
 
   return (
