@@ -9,7 +9,7 @@ import { generateDOTSpeechElevenLabs, AVAILABLE_VOICES } from "./services/eleven
 import { insertPracticeSessionSchema, insertChatMessageSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
-// Stripe integration - will be activated when keys are provided
+// Stripe integration
 let stripe: any = null;
 try {
   if (process.env.STRIPE_SECRET_KEY) {
@@ -17,9 +17,12 @@ try {
     stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2023-10-16",
     });
+    console.log('Stripe configured successfully');
+  } else {
+    console.log('Stripe not configured - payment features disabled');
   }
 } catch (error) {
-  console.log('Stripe not configured - payment features disabled');
+  console.log('Stripe configuration error:', error);
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -181,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Practice Sessions routes
   app.get("/api/practice-sessions/user/:userId", async (req, res) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const userId = req.params.userId;
       const sessions = await storage.getPracticeSessionsByUser(userId);
       res.json(sessions);
     } catch (error) {
@@ -191,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/practice-sessions/user/:userId/recent", async (req, res) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const userId = req.params.userId;
       const limit = parseInt(req.query.limit as string) || 5;
       const sessions = await storage.getRecentSessionsByUser(userId, limit);
       res.json(sessions);
@@ -244,12 +247,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Conversation AI routes
-  app.post("/api/conversation/respond", async (req, res) => {
+  // Conversation AI routes - with usage tracking
+  app.post("/api/conversation/respond", isAuthenticated, async (req: any, res) => {
     try {
-      const { message, history, userId } = req.body;
-      const response = await generateConversationResponse(message, history || [], userId || "default");
-      res.json(response);
+      const { message, history } = req.body;
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check conversation limits for free users
+      if (user.subscriptionStatus === 'free' || !user.subscriptionStatus) {
+        if (user.conversationsUsed >= user.conversationLimit) {
+          return res.status(402).json({ 
+            message: "Free conversation limit reached. Please upgrade to premium for unlimited conversations.",
+            conversationsUsed: user.conversationsUsed,
+            conversationLimit: user.conversationLimit,
+            needsUpgrade: true
+          });
+        }
+      }
+
+      const response = await generateConversationResponse(message, history || [], userId);
+      
+      // Increment conversation count for free users
+      if (user.subscriptionStatus === 'free' || !user.subscriptionStatus) {
+        await storage.updateUser(userId, { 
+          conversationsUsed: user.conversationsUsed + 1 
+        });
+      }
+
+      res.json({
+        ...response,
+        conversationsUsed: user.conversationsUsed + 1,
+        conversationLimit: user.conversationLimit,
+        subscriptionStatus: user.subscriptionStatus
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate response: " + (error as Error).message });
     }
@@ -395,6 +430,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check subscription status
+  app.get('/api/subscription-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        subscriptionStatus: user.subscriptionStatus || 'free',
+        conversationsUsed: user.conversationsUsed || 0,
+        conversationLimit: user.conversationLimit || 10,
+        needsUpgrade: (user.conversationsUsed >= user.conversationLimit) && (user.subscriptionStatus === 'free' || !user.subscriptionStatus)
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get subscription status" });
+    }
+  });
+
   // Subscription management for premium features
   app.post('/api/create-subscription', isAuthenticated, async (req: any, res) => {
     if (!stripe) {
@@ -431,12 +487,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user with Stripe customer ID
       await storage.updateUser(userId, { stripeCustomerId: customer.id });
 
-      // Create subscription (you'll need to set STRIPE_PRICE_ID in environment)
+      // Create $9.99/month price if it doesn't exist
+      let priceId = process.env.STRIPE_PRICE_ID;
+      if (!priceId) {
+        const price = await stripe.prices.create({
+          unit_amount: 999, // $9.99 in cents
+          currency: 'usd',
+          recurring: { interval: 'month' },
+          product_data: {
+            name: 'English Coach Premium',
+            description: 'Unlimited AI conversations for truck drivers',
+          },
+        });
+        priceId = price.id;
+      }
+
+      // Create subscription
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
-        items: [{
-          price: process.env.STRIPE_PRICE_ID || 'price_1234567890', // Replace with actual price ID
-        }],
+        items: [{ price: priceId }],
         payment_behavior: 'default_incomplete',
         expand: ['latest_invoice.payment_intent'],
       });

@@ -33,6 +33,9 @@ export const users = pgTable("users", {
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   subscriptionStatus: varchar("subscription_status").default("free"), // free, active, canceled, past_due
   subscriptionEndDate: timestamp("subscription_end_date"),
+  // Conversation limits
+  conversationsUsed: integer("conversations_used").notNull().default(0),
+  conversationLimit: integer("conversation_limit").notNull().default(10), // 10 free conversations
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
