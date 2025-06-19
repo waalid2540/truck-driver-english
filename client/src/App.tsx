@@ -72,6 +72,7 @@ function Router() {
         <Route path="/coach" component={ConversationalCoach} />
         <Route path="/settings" component={Settings} />
         <Route path="/subscribe" component={Subscribe} />
+        <Route path="/pricing" component={Pricing} />
         <Route component={NotFound} />
       </Switch>
       <BottomNavigation />
